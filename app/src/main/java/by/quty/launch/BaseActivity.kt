@@ -32,6 +32,11 @@ import java.util.Locale
  */
 abstract class BaseActivity : AppCompatActivity() {
 
+    companion object {
+        @Volatile
+        private var isOrientationLocked = false
+    }
+
     private lateinit var _configManager: ConfigManager
     val configManager: ConfigManager get() = _configManager
 
@@ -398,7 +403,17 @@ abstract class BaseActivity : AppCompatActivity() {
     }
 
     /** Применяет ориентацию: приоритет — forced из shell, иначе user. */
+    fun lockOrientationInCurrentPosition() {
+        isOrientationLocked = true
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
+    }
+
     protected fun applyOrientation(shellManager: ShellManager? = null) {
+        if (isOrientationLocked) {
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
+            return
+        }
+
         val userOrientation = configManager.getOrientation()
 
         val forcedOrientation = shellManager?.getForcedOrientationFromActiveShell()

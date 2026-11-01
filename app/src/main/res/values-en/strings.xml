@@ -718,6 +718,7 @@
     <string name="terminal_cmd_theme_desc">Current theme mode</string>
     <string name="terminal_cmd_lang_desc">Current language</string>
     <string name="terminal_cmd_orientation_desc">Current orientation</string>
+    <string name="terminal_cmd_orientation_lock_desc">Lock the current screen orientation</string>
     <string name="terminal_cmd_devmode_desc">DevMode status</string>
     <string name="terminal_cmd_time_desc">Current time, uptime, timezone</string>
     <string name="terminal_cmd_updates_desc">Check for updates and show result</string>
@@ -745,6 +746,7 @@
     <string name="terminal_cmd_webview_desc">WebView information</string>
     <string name="terminal_cmd_screen_desc">Screen resolution and density</string>
     <string name="terminal_cmd_bench_desc">Measure API method execution time</string>
+    <string name="terminal_cmd_bench_all_desc">Benchmark all registered API methods</string>
 
     <!-- history -->
     <string name="terminal_cmd_history_desc">Show command history</string>
@@ -773,6 +775,11 @@
     <string name="terminal_set_strict_requires_fullscreen">Enable fullscreen mode first (set fullscreen "on")</string>
     <string name="terminal_set_shell_not_found" formatted="false">Shell not found: %s</string>
     <string name="terminal_bench_usage">Usage: bench &lt;method&gt; [params] [iterations]</string>
+    <string name="terminal_bench_all_usage">Usage: bench.all [n], where n is the number of runs (1–100)</string>
+    <string name="terminal_bench_all_header">API methods: %1$d · runs: %2$d (sorted by average time)</string>
+    <string name="terminal_bench_all_empty">No registered API methods</string>
+    <string name="terminal_bench_all_error_note">Methods are called without parameters; errors counts success=false responses</string>
+    <string name="terminal_bench_all_row">%1$d. %2$s — avg %3$.2f ms · min %4$.2f ms · max %5$.2f ms · errors %6$d</string>
     <string name="terminal_updates_available">Update available</string>
     <string name="terminal_updates_uptodate">You have the latest version</string>
     <string name="terminal_updates_error" formatted="false">Check failed: %s</string>
@@ -791,6 +798,8 @@
     <!-- api.list -->
     <string name="terminal_api_list_header" formatted="false">Registered API methods (%d):</string>
     <string name="terminal_api_list_empty">No registered methods</string>
+    <string name="terminal_orientation_locked">Current orientation is locked until the app process restarts</string>
+    <string name="terminal_orientation_lock_unavailable">This command is only available from the terminal Activity</string>
     <string name="terminal_api_list_declared">declared</string>
     <string name="terminal_api_list_called">called</string>
 

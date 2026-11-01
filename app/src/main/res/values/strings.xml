@@ -718,6 +718,7 @@
     <string name="terminal_cmd_theme_desc">Текущий режим темы</string>
     <string name="terminal_cmd_lang_desc">Текущий язык</string>
     <string name="terminal_cmd_orientation_desc">Текущая ориентация</string>
+    <string name="terminal_cmd_orientation_lock_desc">Заблокировать текущую ориентацию экрана</string>
     <string name="terminal_cmd_devmode_desc">Статус DevMode</string>
     <string name="terminal_cmd_time_desc">Текущее время, uptime, timezone</string>
     <string name="terminal_cmd_updates_desc">Проверить обновления и показать результат</string>
@@ -745,6 +746,7 @@
     <string name="terminal_cmd_webview_desc">Информация о WebView</string>
     <string name="terminal_cmd_screen_desc">Разрешение и плотность экрана</string>
     <string name="terminal_cmd_bench_desc">Замерить время API-метода</string>
+    <string name="terminal_cmd_bench_all_desc">Замерить все зарегистрированные API-методы</string>
 
     <!-- history -->
     <string name="terminal_cmd_history_desc">Показать историю команд</string>
@@ -773,6 +775,11 @@
     <string name="terminal_set_strict_requires_fullscreen">Сначала включите полноэкранный режим (set fullscreen "on")</string>
     <string name="terminal_set_shell_not_found" formatted="false">Оболочка не найдена: %s</string>
     <string name="terminal_bench_usage">Использование: bench &lt;method&gt; [params] [iterations]</string>
+    <string name="terminal_bench_all_usage">Использование: bench.all [n], где n — число замеров (1–100)</string>
+    <string name="terminal_bench_all_header">API-методы: %1$d · замеров: %2$d (сортировка по среднему времени)</string>
+    <string name="terminal_bench_all_empty">Нет зарегистрированных API-методов</string>
+    <string name="terminal_bench_all_error_note">Методы вызываются без параметров; errors — ответы success=false</string>
+    <string name="terminal_bench_all_row">%1$d. %2$s — avg %3$.2f ms · min %4$.2f ms · max %5$.2f ms · errors %6$d</string>
     <string name="terminal_updates_available">Доступно обновление</string>
     <string name="terminal_updates_uptodate">У вас последняя версия</string>
     <string name="terminal_updates_error" formatted="false">Ошибка проверки: %s</string>
@@ -791,6 +798,8 @@
     <!-- api.list -->
     <string name="terminal_api_list_header" formatted="false">Зарегистрированные API-методы (%d):</string>
     <string name="terminal_api_list_empty">Нет зарегистрированных методов</string>
+    <string name="terminal_orientation_locked">Текущая ориентация заблокирована до перезапуска приложения</string>
+    <string name="terminal_orientation_lock_unavailable">Команда доступна только из Activity-терминала</string>
     <string name="terminal_api_list_declared">declared</string>
     <string name="terminal_api_list_called">called</string>
 

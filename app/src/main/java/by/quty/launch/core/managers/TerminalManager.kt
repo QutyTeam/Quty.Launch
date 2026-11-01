@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.longOrNull
 
 /**
@@ -146,6 +147,13 @@ object TerminalManager {
                 handler = { TerminalExecutionResult(orientationHandler(context, configManager)) }
             ),
             TerminalCommandModel(
+                name = "orientation.lock",
+                descriptionRes = R.string.terminal_cmd_orientation_lock_desc,
+                requireDevMode = true,
+                isWrite = false,
+                handler = { TerminalExecutionResult(orientationLockHandler(context)) }
+            ),
+            TerminalCommandModel(
                 name = "devmode",
                 descriptionRes = R.string.terminal_cmd_devmode_desc,
                 requireDevMode = false,
@@ -211,6 +219,13 @@ object TerminalManager {
                 requireDevMode = true,
                 isWrite = false,
                 handler = { TerminalExecutionResult(benchHandler(context, it)) }
+            ),
+            TerminalCommandModel(
+                name = "bench.all",
+                descriptionRes = R.string.terminal_cmd_bench_all_desc,
+                requireDevMode = true,
+                isWrite = false,
+                handler = { TerminalExecutionResult(benchAllHandler(context, it)) }
             ),
 
             // ===== API =====
@@ -639,6 +654,15 @@ object TerminalManager {
         }
     }
 
+    /** orientation.lock: фиксирует текущее положение экрана до завершения процесса. */
+    private fun orientationLockHandler(context: Context): String {
+        val activity = context as? by.quty.launch.BaseActivity
+            ?: return errorMessage(context.getString(R.string.terminal_orientation_lock_unavailable))
+
+        activity.lockOrientationInCurrentPosition()
+        return context.getString(R.string.terminal_orientation_locked)
+    }
+
     /** devmode: on/off. */
     private fun devModeHandler(context: Context): String {
         return if (isDevModeEnabled(context)) "on" else "off"
@@ -782,6 +806,101 @@ object TerminalManager {
                     appendLine(pad("Avg:") + "${avg}ms")
                     append(pad("Max:") + "${max}ms")
                 }
+            } catch (e: Exception) {
+                errorMessage(
+                    context.getString(R.string.terminal_error_execution, e.message ?: "Unknown error")
+                )
+            }
+        }
+    }
+
+    /** bench.all: замеряет все зарегистрированные API-методы и сортирует по среднему времени. */
+    private suspend fun benchAllHandler(context: Context, args: List<String>): String {
+        val iterations = when {
+            args.isEmpty() -> 5
+            args.size == 1 -> args[0].toIntOrNull()
+                ?.takeIf { it in 1..100 }
+                ?: return errorMessage(context.getString(R.string.terminal_bench_all_usage))
+            else -> return errorMessage(context.getString(R.string.terminal_bench_all_usage))
+        }
+
+        val methods = ApiRouter.getRegisteredMethods().sortedBy { it.name }
+        if (methods.isEmpty()) {
+            return context.getString(R.string.terminal_bench_all_empty)
+        }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                data class BenchResult(
+                    val name: String,
+                    val minMs: Double,
+                    val avgMs: Double,
+                    val maxMs: Double,
+                    val failures: Int
+                )
+
+                val results = methods.map { method ->
+                    // Warm-up: один вызов не учитывается в статистике.
+                    ApiRouter.execute(method.name, null)
+
+                    val times = ArrayList<Double>(iterations)
+                    var failures = 0
+
+                    repeat(iterations) {
+                        val start = System.nanoTime()
+                        val response = ApiRouter.execute(method.name, null)
+                        val elapsedMs = (System.nanoTime() - start) / 1_000_000.0
+                        times.add(elapsedMs)
+
+                        val success = try {
+                            Json.parseToJsonElement(response)
+                                .jsonObject["success"]
+                                ?.jsonPrimitive
+                                ?.booleanOrNull
+                        } catch (_: Exception) {
+                            null
+                        }
+                        if (success == false) failures++
+                    }
+
+                    BenchResult(
+                        name = method.name,
+                        minMs = times.minOrNull() ?: 0.0,
+                        avgMs = times.average(),
+                        maxMs = times.maxOrNull() ?: 0.0,
+                        failures = failures
+                    )
+                }.sortedByDescending { it.avgMs }
+
+                LoggerManager.info(
+                    LoggerTagModel.TERMINAL,
+                    "TERMINAL.bench_all  methods=${results.size}  n=$iterations"
+                )
+
+                buildString {
+                    appendLine(
+                        context.getString(
+                            R.string.terminal_bench_all_header,
+                            results.size,
+                            iterations
+                        )
+                    )
+                    appendLine(context.getString(R.string.terminal_bench_all_error_note))
+                    appendLine()
+                    results.forEachIndexed { index, result ->
+                        appendLine(
+                            context.getString(
+                                R.string.terminal_bench_all_row,
+                                index + 1,
+                                result.name,
+                                result.avgMs,
+                                result.minMs,
+                                result.maxMs,
+                                result.failures
+                            )
+                        )
+                    }
+                }.trimEnd()
             } catch (e: Exception) {
                 errorMessage(
                     context.getString(R.string.terminal_error_execution, e.message ?: "Unknown error")
