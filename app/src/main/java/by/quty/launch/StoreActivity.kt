@@ -9,6 +9,8 @@ import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import by.quty.launch.R
+import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.adapters.SettingsMenuAdapter
 import by.quty.launch.core.fragments.store.StoreCatalogFragment
 import by.quty.launch.core.fragments.store.StoreImportFragment
@@ -419,7 +421,8 @@ class StoreActivity : BaseActivity() {
                 remote = cached,
                 localShells = shellManager.getAvailableShells(),
                 activeName = configManager.getActiveShell(),
-                activeVersion = configManager.getActiveShellVersion()
+                activeVersion = configManager.getActiveShellVersion(),
+                safeShellName = if (configManager.isSafeModeActive()) CoreConfig.SAFE_MODE_SHELL else null
             )
 
             if (isFinishing || isDestroyed) return@launch

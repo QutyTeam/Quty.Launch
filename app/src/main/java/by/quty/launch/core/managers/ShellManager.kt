@@ -190,11 +190,11 @@ class ShellManager(
         val shells = getAvailableShells()
 
         var defaultShell = shells.find { it.isDefault }
-        if (defaultShell == null) defaultShell = shells.find { it.name == "Default" }
+        if (defaultShell == null) defaultShell = shells.find { it.name == CoreConfig.SAFE_MODE_SHELL }
         if (defaultShell == null) defaultShell = shells.firstOrNull()
         if (defaultShell == null) {
             defaultShell = Shell(
-                name = "Default",
+                name = CoreConfig.SAFE_MODE_SHELL,
                 isDefault = true,
                 sourcePath = "shells/Default",
                 isAsset = true,
@@ -325,11 +325,11 @@ class ShellManager(
                 shells.add(
                     Shell(
                         name = shellFolder,
-                        isDefault = shellFolder == "Default",
+                        isDefault = shellFolder == CoreConfig.SAFE_MODE_SHELL,
                         sourcePath = "shells/$shellFolder",
                         isAsset = true,
                         displayName = manifest?.name ?: when (shellFolder) {
-                            "Default" -> context.getString(R.string.shell_default_name)
+                            CoreConfig.SAFE_MODE_SHELL -> context.getString(R.string.shell_default_name)
                             else -> shellFolder.replaceFirstChar { it.uppercase() }
                         },
                         isCustom = false,
@@ -421,7 +421,7 @@ class ShellManager(
         val shells = getAvailableShells()
 
         if (configManager.isSafeModeActive()) {
-            val defaultShell = shells.find { it.name == "Default" }
+            val defaultShell = shells.find { it.name == CoreConfig.SAFE_MODE_SHELL }
             if (defaultShell != null) {
                 LoggerManager.warn(
                     LoggerTagModel.SHELL,
@@ -438,10 +438,10 @@ class ShellManager(
         val defaultShellId = configManager.getDefaultShell()
         shells.find { it.name == defaultShellId }?.let { return it }
 
-        shells.find { it.name == "Default" }?.let { return it }
+        shells.find { it.name == CoreConfig.SAFE_MODE_SHELL }?.let { return it }
 
         return shells.firstOrNull() ?: Shell(
-            name = "Default",
+            name = CoreConfig.SAFE_MODE_SHELL,
             isDefault = true,
             sourcePath = "shells/Default",
             isAsset = true,
@@ -472,11 +472,14 @@ class ShellManager(
      * Устанавливает активную оболочку.
      * В Safe Mode prefs всё равно пишутся — выбор применится после выхода.
      */
-    suspend fun setActiveShell(shell: Shell) = withContext(Dispatchers.IO) {
+    /** persist=false — загрузить оболочку без записи в prefs (Safe Mode: Default виртуален, реальная оболочка сохраняется). */
+    suspend fun setActiveShell(shell: Shell, persist: Boolean = true) = withContext(Dispatchers.IO) {
         val previousShellName = activeShell?.name
 
-        configManager.setActiveShell(shell.name)
-        configManager.setActiveShellVersion(shell.version ?: "")
+        if (persist) {
+            configManager.setActiveShell(shell.name)
+            configManager.setActiveShellVersion(shell.version ?: "")
+        }
 
         activeShell = shell
 

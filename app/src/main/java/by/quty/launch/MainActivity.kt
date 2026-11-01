@@ -227,7 +227,8 @@ class MainActivity : BaseActivity() {
     private fun loadShell() {
         lifecycleScope.launch {
             val shellToActivate = shellManager.getShellToActivate()
-            shellManager.setActiveShell(shellToActivate)
+            // В Safe Mode Default загружается без записи в prefs — реальная оболочка сохраняется для возврата.
+            shellManager.setActiveShell(shellToActivate, persist = !configManager.isSafeModeActive())
 
             applyOrientation(shellManager)
 

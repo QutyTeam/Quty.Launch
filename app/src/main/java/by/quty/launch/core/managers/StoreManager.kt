@@ -336,19 +336,20 @@ class StoreManager(private val context: Context) {
          * Собирает объединённый список элементов магазина.
          * Сортировка: активная > обновление > установленные > остальные.
          * activeVersion "" нормализуется в null — иначе ломается isActiveSameVersion.
+         * safeShellName — оболочка, форсируемая Safe Mode (помечается isActiveInSafeMode).
          */
         fun buildItems(
             remote: List<StoreRemoteItemModel>,
             localShells: List<Shell>,
             activeName: String?,
-            activeVersion: String?
+            activeVersion: String?,
+            safeShellName: String? = null
         ): List<StoreItemModel> {
             val result = mutableListOf<StoreItemModel>()
 
             val normalizedActiveVersion = activeVersion?.takeIf { it.isNotEmpty() }
 
             val localByName = localShells.associateBy { it.name }
-
             remote
                 .filter { it.type == StoreItemTypeModel.SHELL.id }
                 .forEach { r ->
@@ -373,6 +374,7 @@ class StoreManager(private val context: Context) {
                             installedVersion = local?.version,
                             isActive = activeName != null && activeName == r.name,
                             activeVersion = normalizedActiveVersion,
+                            isActiveInSafeMode = safeShellName != null && safeShellName == r.name,
                             remoteInfo = r,
                             localShell = local
                         )
@@ -403,6 +405,7 @@ class StoreManager(private val context: Context) {
                         installedVersion = local.version,
                         isActive = activeName != null && activeName == local.name,
                         activeVersion = normalizedActiveVersion,
+                        isActiveInSafeMode = safeShellName != null && safeShellName == local.name,
                         remoteInfo = null,
                         localShell = local
                     )

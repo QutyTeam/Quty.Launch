@@ -608,6 +608,7 @@
 
     <!-- Statuses -->
     <string name="store_status_active">Active</string>
+    <string name="store_status_safemode">Active in SafeMode</string>
     <string name="store_status_update">Update available</string>
     <string name="store_status_installed">Installed</string>
     <string name="store_status_newer">Newer</string>

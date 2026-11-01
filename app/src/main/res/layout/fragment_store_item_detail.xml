@@ -100,6 +100,27 @@
                 android:visibility="gone"
                 tools:visibility="visible" />
 
+            <!-- Бейдж «Активна при SafeMode» (для Default в активном Safe Mode). -->
+            <TextView
+                android:id="@+id/item_safemode_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_status_safemode"
+                android:clickable="false"
+                android:focusable="false"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="1"
+                android:layout_marginEnd="@dimen/spacing_xs"
+                android:paddingStart="@dimen/spacing_s"
+                android:paddingTop="@dimen/spacing_xxs"
+                android:paddingEnd="@dimen/spacing_s"
+                android:paddingBottom="@dimen/spacing_xxs"
+                android:text="@string/store_status_safemode"
+                android:textColor="@color/status_error"
+                android:textSize="@dimen/text_l"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
             <!-- Кнопка-меню (ic_menu_dots). Видна, если в меню есть хотя бы один пункт. -->
             <ImageButton
                 android:id="@+id/item_menu_button"

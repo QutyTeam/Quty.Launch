@@ -24,6 +24,9 @@ object CoreConfig {
     /** Оболочка по умолчанию */
     const val DEFAULT_SHELL = "QutyAuto"
 
+    /** Встроенная оболочка: фолбэк, Safe Mode и последняя инстанция при отсутствии активной. */
+    const val SAFE_MODE_SHELL = "Default"
+
     /** Ориентация по умолчанию */
     const val DEFAULT_ORIENTATION = "sensor"
 

@@ -29,6 +29,9 @@ data class StoreItemModel(
     val isActive: Boolean,
     val activeVersion: String?,
 
+    /** true, если оболочка загружена из-за активного Safe Mode (Default), а не выбрана пользователем. */
+    val isActiveInSafeMode: Boolean = false,
+
     val remoteInfo: StoreRemoteItemModel?,
     val localShell: Shell?
 ) {

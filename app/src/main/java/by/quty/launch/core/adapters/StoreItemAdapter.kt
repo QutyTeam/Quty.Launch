@@ -87,6 +87,7 @@ class StoreItemAdapter(
 
         private val statusContainer: LinearLayout = itemView.findViewById(R.id.item_status_container)
         private val statusActive: TextView = itemView.findViewById(R.id.item_status_active)
+        private val statusSafeMode: TextView = itemView.findViewById(R.id.item_status_safemode)
         private val statusUpdate: TextView = itemView.findViewById(R.id.item_status_update)
         private val statusInstalled: TextView = itemView.findViewById(R.id.item_status_installed)
         private val statusNewer: TextView = itemView.findViewById(R.id.item_status_newer)
@@ -173,6 +174,7 @@ class StoreItemAdapter(
             val context = itemView.context
 
             statusActive.visibility = View.GONE
+            statusSafeMode.visibility = View.GONE
             statusUpdate.visibility = View.GONE
             statusInstalled.visibility = View.GONE
             statusNewer.visibility = View.GONE
@@ -181,6 +183,11 @@ class StoreItemAdapter(
 
             if (item.isActive) {
                 statusActive.visibility = View.VISIBLE
+                hasAny = true
+            }
+
+            if (item.isActiveInSafeMode) {
+                statusSafeMode.visibility = View.VISIBLE
                 hasAny = true
             }
 

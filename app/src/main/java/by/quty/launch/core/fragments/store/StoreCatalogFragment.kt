@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import by.quty.launch.R
 import by.quty.launch.StoreActivity
+import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.adapters.StoreItemAdapter
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
@@ -232,7 +233,8 @@ class StoreCatalogFragment : Fragment() {
             remote = remote,
             localShells = localShells,
             activeName = activeName,
-            activeVersion = activeVersion
+            activeVersion = activeVersion,
+            safeShellName = if (configManager.isSafeModeActive()) CoreConfig.SAFE_MODE_SHELL else null
         )
 
         applyFilter()

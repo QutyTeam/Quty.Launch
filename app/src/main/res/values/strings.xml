@@ -608,6 +608,7 @@
 
     <!-- Статусы -->
     <string name="store_status_active">Активна</string>
+    <string name="store_status_safemode">Активна при SafeMode</string>
     <string name="store_status_update">Есть обновление</string>
     <string name="store_status_installed">Установлено</string>
     <string name="store_status_newer">Новее</string>

@@ -64,6 +64,7 @@ class StoreItemDetailFragment : Fragment() {
     private lateinit var nameText: TextView
     private lateinit var authorText: TextView
     private lateinit var activeBadge: TextView
+    private lateinit var safeModeBadge: TextView
     private lateinit var btnMenu: ImageButton
 
     private lateinit var installProgressContainer: LinearLayout
@@ -178,6 +179,7 @@ class StoreItemDetailFragment : Fragment() {
         nameText = view.findViewById(R.id.item_name)
         authorText = view.findViewById(R.id.item_author)
         activeBadge = view.findViewById(R.id.item_action_button)
+        safeModeBadge = view.findViewById(R.id.item_safemode_badge)
         btnMenu = view.findViewById(R.id.item_menu_button)
 
         installProgressContainer = view.findViewById(R.id.install_progress_container)
@@ -388,6 +390,7 @@ class StoreItemDetailFragment : Fragment() {
         }
 
         activeBadge.visibility = if (item.isActiveSameVersion) View.VISIBLE else View.GONE
+        safeModeBadge.visibility = if (item.isActiveInSafeMode) View.VISIBLE else View.GONE
 
         val menuItems = buildMenuItems(item)
         if (menuItems.isEmpty()) {
@@ -731,6 +734,7 @@ class StoreItemDetailFragment : Fragment() {
     /** Показывает прогресс установки. */
     private fun showInstallProgress(percent: Int) {
         activeBadge.visibility = View.GONE
+        safeModeBadge.visibility = View.GONE
         installProgressContainer.visibility = View.VISIBLE
         installProgressBar.isIndeterminate = false
         installProgressBar.progress = percent
