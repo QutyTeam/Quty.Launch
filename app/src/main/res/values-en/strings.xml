@@ -272,6 +272,7 @@
     <string name="safe_mode_exit_button">Exit safe mode</string>
     <string name="safe_mode_activated_toast">Safe mode activated</string>
     <string name="safe_mode_exited_toast">Safe mode disabled. Restarting…</string>
+    <string name="safe_mode_badge_text">Safe Mode</string>
 
     <!-- ============================================================ -->
     <!-- ===== COLOR SCHEMES ======================================== -->

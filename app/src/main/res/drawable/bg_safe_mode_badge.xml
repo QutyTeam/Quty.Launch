@@ -1,0 +1,6 @@
+<!-- res/drawable/bg_safe_mode_badge.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/status_error" />
+    <corners android:radius="@dimen/radius_full" />
+</shape>

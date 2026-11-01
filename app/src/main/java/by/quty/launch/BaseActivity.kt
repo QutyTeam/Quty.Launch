@@ -12,15 +12,21 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import by.quty.launch.configs.ApiConfig
@@ -52,6 +58,9 @@ abstract class BaseActivity : AppCompatActivity() {
     private var needsRestart = false
 
     private var isRestarting = false
+
+    /** Плашка «Safe Mode» поверх контента (видна на всех экранах активности). */
+    private var safeModeBadge: TextView? = null
 
     /** Применяет язык до создания контекста. */
     override fun attachBaseContext(newBase: Context) {
@@ -143,6 +152,66 @@ abstract class BaseActivity : AppCompatActivity() {
             else -> R.style.Theme_QutyLaunch_Teal
         }
         setTheme(themeRes)
+    }
+
+    // ============================================================
+    // SAFE MODE BADGE
+    // ============================================================
+
+    /** Показывает или скрывает плашку «Safe Mode» поверх контента активности. */
+    private fun updateSafeModeBadge() {
+        val root = findViewById<ViewGroup>(android.R.id.content) ?: return
+        val active = ::_configManager.isInitialized && configManager.isSafeModeActive()
+
+        if (!active) {
+            safeModeBadge?.let { root.removeView(it) }
+            safeModeBadge = null
+            return
+        }
+
+        if (safeModeBadge != null) return
+
+        val badge = TextView(this).apply {
+            text = getString(R.string.safe_mode_badge_text)
+            setTextColor(0xFFFFFFFF.toInt())
+            setTextSize(
+                TypedValue.COMPLEX_UNIT_PX,
+                resources.getDimension(R.dimen.text_s)
+            )
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setBackgroundResource(R.drawable.bg_safe_mode_badge)
+            setPadding(
+                resources.getDimensionPixelSize(R.dimen.spacing_l),
+                resources.getDimensionPixelSize(R.dimen.spacing_xs),
+                resources.getDimensionPixelSize(R.dimen.spacing_l),
+                resources.getDimensionPixelSize(R.dimen.spacing_xs)
+            )
+            elevation = resources.displayMetrics.density * 8f
+        }
+
+        val params = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+        }
+
+        // Отступ сверху — под статус-бар и вырез экрана.
+        ViewCompat.setOnApplyWindowInsetsListener(badge) { view, insets ->
+            val top = insets.getInsets(
+                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
+            ).top
+            val lp = view.layoutParams as FrameLayout.LayoutParams
+            val newMargin = top + resources.getDimensionPixelSize(R.dimen.spacing_s)
+            if (lp.topMargin != newMargin) {
+                lp.topMargin = newMargin
+                view.layoutParams = lp
+            }
+            insets
+        }
+
+        root.addView(badge, params)
+        safeModeBadge = badge
     }
 
     // ============================================================
@@ -401,6 +470,12 @@ abstract class BaseActivity : AppCompatActivity() {
     @Suppress("DEPRECATION")
     private fun removeStrictModeListenerLegacy(decorView: View) {
         decorView.setOnSystemUiVisibilityChangeListener(null)
+    }
+
+    /** Обновляет плашку Safe Mode при каждом выходе активности на экран. */
+    override fun onResume() {
+        super.onResume()
+        updateSafeModeBadge()
     }
 
     /** Заново применяет immersive при получении фокуса. */
