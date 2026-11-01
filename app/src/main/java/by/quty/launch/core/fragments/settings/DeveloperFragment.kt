@@ -171,7 +171,8 @@ class DeveloperFragment : Fragment() {
             }
 
             dialogView.findViewById<Button>(R.id.dev_manifest_copy_button).setOnClickListener {
-                val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                    ?: return@setOnClickListener
                 val clip = ClipData.newPlainText("manifest.json", displayText)
                 @Suppress("UsePropertyAccessSyntax")
                 clipboard.setPrimaryClip(clip)

@@ -7,8 +7,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
+import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.Core
 import by.quty.launch.core.managers.LoggerManager
@@ -66,6 +69,13 @@ class MainActivity : BaseActivity() {
             LoggerTagModel.CORE,
             "CORE.main  created"
         )
+
+        val prefs = getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
+        val wasPendingRestart = prefs.getBoolean(ApiConfig.PREFS_PENDING_RESTART_APPLY, false)
+        if (wasPendingRestart) {
+            prefs.edit { remove(ApiConfig.PREFS_PENDING_RESTART_APPLY) }
+            LoggerManager.info(LoggerTagModel.CORE, "CORE.main  pending_restart  cleared (cold start)")
+        }
 
         if (configManager.needRestartForOrientation()) {
             configManager.clearRestartForOrientationFlag()
@@ -146,7 +156,8 @@ class MainActivity : BaseActivity() {
     /** Компенсация «проглоченного» ACTION_DOWN при коротком нажатии. */
     private fun decreaseVolumeManually() {
         try {
-            val audioManager = getSystemService(AUDIO_SERVICE) as android.media.AudioManager
+            val audioManager = getSystemService(AUDIO_SERVICE) as? android.media.AudioManager
+                ?: return
             audioManager.adjustStreamVolume(
                 android.media.AudioManager.STREAM_MUSIC,
                 android.media.AudioManager.ADJUST_LOWER,
@@ -186,6 +197,16 @@ class MainActivity : BaseActivity() {
     /** Чистит состояние Safe Mode при уничтожении. */
     override fun onDestroy() {
         clearSafeModeState()
+
+        if (::jsBridge.isInitialized) {
+            jsBridge.destroy()
+        }
+
+        if (::webView.isInitialized) {
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.destroy()
+        }
+
         super.onDestroy()
     }
 

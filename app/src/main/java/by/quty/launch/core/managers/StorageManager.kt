@@ -170,7 +170,7 @@ class StorageManager(private val context: Context) {
         return set(get(directory, name), content, overwrite)
     }
 
-    /** Копирует InputStream в файл. */
+    /** Копирует InputStream в файл (атомарно: .tmp → renameTo). */
     suspend fun set(file: File, inputStream: InputStream, overwrite: Boolean = true): Boolean =
         withContext(Dispatchers.IO) {
             try {
@@ -178,11 +178,19 @@ class StorageManager(private val context: Context) {
                     return@withContext false
                 }
                 file.parentFile?.mkdirs()
-                FileOutputStream(file).use { output ->
+                val tmpFile = File(file.absolutePath + EXT_TEMP)
+                FileOutputStream(tmpFile).use { output ->
                     inputStream.copyTo(output)
+                }
+                if (!tmpFile.renameTo(file)) {
+                    // Fallback: direct copy if rename fails (cross-filesystem)
+                    file.writeBytes(tmpFile.readBytes())
+                    tmpFile.delete()
                 }
                 true
             } catch (_: Exception) {
+                // Clean up tmp on failure
+                File(file.absolutePath + EXT_TEMP).delete()
                 false
             }
         }
@@ -192,7 +200,7 @@ class StorageManager(private val context: Context) {
         return set(get(directory, name), inputStream, overwrite)
     }
 
-    /** Пишет байты в файл. */
+    /** Пишет байты в файл (атомарно: .tmp → renameTo). */
     suspend fun set(file: File, data: ByteArray, overwrite: Boolean = true): Boolean =
         withContext(Dispatchers.IO) {
             try {
@@ -200,9 +208,17 @@ class StorageManager(private val context: Context) {
                     return@withContext false
                 }
                 file.parentFile?.mkdirs()
-                file.writeBytes(data)
+                val tmpFile = File(file.absolutePath + EXT_TEMP)
+                tmpFile.writeBytes(data)
+                if (!tmpFile.renameTo(file)) {
+                    // Fallback: direct write if rename fails (cross-filesystem)
+                    file.writeBytes(data)
+                    tmpFile.delete()
+                }
                 true
             } catch (_: Exception) {
+                // Clean up tmp on failure
+                File(file.absolutePath + EXT_TEMP).delete()
                 false
             }
         }

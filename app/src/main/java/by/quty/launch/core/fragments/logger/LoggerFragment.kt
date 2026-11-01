@@ -371,7 +371,8 @@ class LoggerFragment : Fragment(), LoggerManager.LoggerListener {
 
         val text = formatAllEntries()
         val clipboard = requireContext()
-            .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            .getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            ?: return
         val clip = ClipData.newPlainText("logger", text)
         @Suppress("UsePropertyAccessSyntax")
         clipboard.setPrimaryClip(clip)
@@ -444,7 +445,8 @@ class LoggerFragment : Fragment(), LoggerManager.LoggerListener {
 
         dialogView.findViewById<Button>(R.id.logger_details_copy_button).setOnClickListener {
             val clipboard = requireContext()
-                .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                .getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                ?: return@setOnClickListener
             val clip = ClipData.newPlainText("logger_details", details)
             @Suppress("UsePropertyAccessSyntax")
             clipboard.setPrimaryClip(clip)

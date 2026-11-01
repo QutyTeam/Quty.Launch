@@ -119,8 +119,10 @@ class LoggerActivity : BaseActivity() {
 
     /** Раскладывает панели под текущий режим (планшет/телефон). */
     private fun applyMode() {
-        val menuParams = binding.menuPane.layoutParams as LinearLayout.LayoutParams
-        val contentParams = binding.contentPane.layoutParams as LinearLayout.LayoutParams
+        val menuParams = binding.menuPane.layoutParams as? LinearLayout.LayoutParams
+            ?: LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        val contentParams = binding.contentPane.layoutParams as? LinearLayout.LayoutParams
+            ?: LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 
         if (isTabletMode) {
             menuParams.width = menuWidthPx
@@ -297,7 +299,7 @@ class LoggerActivity : BaseActivity() {
 
         try {
             val fragment = supportFragmentManager.fragmentFactory.instantiate(
-                item.fragment.classLoader!!,
+                item.fragment.classLoader ?: javaClass.classLoader,
                 item.fragment.name
             )
 

@@ -176,7 +176,7 @@ class LoggerFilesFragment : Fragment() {
             dialogView.findViewById<Button>(R.id.logger_file_dialog_copy_button).setOnClickListener {
                 val clipboard = requireContext()
                     .getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-                        as android.content.ClipboardManager
+                        as? android.content.ClipboardManager ?: return@setOnClickListener
                 val clip = android.content.ClipData.newPlainText(file.name, content)
                 @Suppress("UsePropertyAccessSyntax")
                 clipboard.setPrimaryClip(clip)

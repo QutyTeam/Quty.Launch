@@ -84,6 +84,9 @@ object ApiConfig {
     /** Ключ: принудительно показать онбординг */
     const val PREFS_FORCE_SHOW_ONBOARDING = "force_show_onboarding"
 
+    /** Ключ: были изменения, ожидающие применения после перезапуска */
+    const val PREFS_PENDING_RESTART_APPLY = "pending_restart_apply"
+
     /** Префикс ключа истории команд терминала */
     const val TERMINAL_HISTORY_KEY_PREFIX = "history_"
 

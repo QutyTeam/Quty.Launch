@@ -124,4 +124,10 @@ class JsBridge(
             }
         }
     }
+
+    /** Отменяет фоновые задачи и отвязывает WebView (вызывать при уничтожении активности). */
+    fun destroy() {
+        bridgeScope.cancel()
+        webViewRef = null
+    }
 }

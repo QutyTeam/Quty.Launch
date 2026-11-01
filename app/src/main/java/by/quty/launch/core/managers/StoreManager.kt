@@ -35,7 +35,8 @@ class StoreManager(private val context: Context) {
         try {
             LoggerManager.info(LoggerTagModel.STORE, "STORE.fetch  start")
 
-            val connection = URL(CoreConfig.STORE_URL).openConnection() as HttpURLConnection
+            val connection = URL(CoreConfig.STORE_URL).openConnection() as? HttpURLConnection
+                ?: return@withContext null
             connection.requestMethod = "GET"
             connection.connectTimeout = CoreConfig.CONNECT_TIMEOUT_MS
             connection.readTimeout = CoreConfig.READ_TIMEOUT_MS

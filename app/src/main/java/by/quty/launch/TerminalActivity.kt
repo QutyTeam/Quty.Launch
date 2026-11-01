@@ -130,12 +130,16 @@ class TerminalActivity : BaseActivity() {
 
             when (keyCode) {
                 KeyEvent.KEYCODE_DPAD_UP -> {
-                    navigateHistoryUp(view as EditText)
-                    true
+                    (view as? EditText)?.let { 
+                        navigateHistoryUp(it)
+                        true
+                    } ?: false
                 }
                 KeyEvent.KEYCODE_DPAD_DOWN -> {
-                    navigateHistoryDown(view as EditText)
-                    true
+                    (view as? EditText)?.let { 
+                        navigateHistoryDown(it)
+                        true
+                    } ?: false
                 }
                 else -> false
             }

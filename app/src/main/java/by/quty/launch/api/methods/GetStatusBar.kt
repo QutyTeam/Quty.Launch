@@ -184,7 +184,8 @@ class GetStatusBar(
                 return null
             }
 
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return null
             val activeNetwork = connectivityManager.activeNetwork
             val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return null
 
@@ -247,7 +248,8 @@ class GetStatusBar(
     /** Возвращает громкость музыки в процентах. */
     private fun getVolume(): String? {
         return try {
-            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                ?: return null
             val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
             val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
 
@@ -272,7 +274,8 @@ class GetStatusBar(
                 return null
             }
 
-            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+                ?: return null
             telephonyManager.signalStrength?.level
         } catch (_: Exception) {
             null
@@ -287,7 +290,8 @@ class GetStatusBar(
                 return null
             }
 
-            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+                ?: return null
             val networkType = telephonyManager.dataNetworkType
 
             when (networkType) {
@@ -371,7 +375,8 @@ class GetStatusBar(
                 return false
             }
 
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return false
             val activeNetwork = connectivityManager.activeNetwork
             val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
             networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
@@ -383,7 +388,8 @@ class GetStatusBar(
     /** true, если GPS-провайдер включён. */
     private fun isGpsEnabled(): Boolean {
         return try {
-            val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+                ?: return false
             locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
         } catch (_: Exception) {
             false
@@ -395,7 +401,8 @@ class GetStatusBar(
     /** true, если подключено USB-устройство. */
     private fun isUsbConnected(): Boolean {
         return try {
-            val usbManager = context.getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
+            val usbManager = context.getSystemService(Context.USB_SERVICE) as? android.hardware.usb.UsbManager
+                ?: return false
             usbManager.deviceList.isNotEmpty()
         } catch (_: Exception) {
             false

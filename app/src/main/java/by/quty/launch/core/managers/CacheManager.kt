@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import by.quty.launch.api.model.AppInfo
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.LoggerTagModel
@@ -92,7 +93,12 @@ object CacheManager {
                 addDataScheme("package")
             }
 
-            context.applicationContext.registerReceiver(packageReceiver, filter)
+            androidx.core.content.ContextCompat.registerReceiver(
+                context.applicationContext,
+                packageReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
             receiverRegistered = true
         } catch (_: Exception) {
         }

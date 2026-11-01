@@ -27,10 +27,12 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
+import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.StorageDirectory
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.managers.SystemUpdateManager
 import by.quty.launch.core.managers.VersionInfo
+import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.utilities.AppInfoHelper
 import kotlinx.coroutines.launch
 import java.io.File
@@ -689,7 +691,7 @@ class UpdateFragment : Fragment() {
             }
             selectApkLauncher.launch(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            LoggerManager.error(LoggerTagModel.UPDATE, "UPDATE.select_apk  error", e)
             selectApkAlternative()
         }
     }
@@ -704,7 +706,7 @@ class UpdateFragment : Fragment() {
             }
             selectApkLauncher.launch(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            LoggerManager.error(LoggerTagModel.UPDATE, "UPDATE.select_apk_fallback  error", e)
             Toast.makeText(requireContext(), getString(R.string.error_open_file_manager), Toast.LENGTH_SHORT).show()
         }
     }
@@ -813,7 +815,7 @@ class UpdateFragment : Fragment() {
                 null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            LoggerManager.error(LoggerTagModel.UPDATE, "UPDATE.archive_info  error", e)
             null
         }
     }
@@ -869,7 +871,7 @@ class UpdateFragment : Fragment() {
             }
             startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            LoggerManager.error(LoggerTagModel.UPDATE, "UPDATE.install_apk  error", e)
             Toast.makeText(
                 requireContext(),
                 "${getString(R.string.install_error)}: ${e.message}",

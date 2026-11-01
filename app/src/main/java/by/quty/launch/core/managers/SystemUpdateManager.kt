@@ -175,7 +175,8 @@ class SystemUpdateManager(private val context: Context) {
         try {
             LoggerManager.info(LoggerTagModel.UPDATE, "UPDATE.check  start")
 
-            val connection = URL(versionUrl).openConnection() as HttpURLConnection
+            val connection = URL(versionUrl).openConnection() as? HttpURLConnection
+                ?: return@withContext UpdateCheckResult(hasUpdate = false, error = context.getString(R.string.update_error))
             connection.requestMethod = "GET"
             connection.connectTimeout = CoreConfig.CONNECT_TIMEOUT_MS
             connection.readTimeout = CoreConfig.READ_TIMEOUT_MS

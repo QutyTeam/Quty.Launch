@@ -19,13 +19,16 @@ import android.widget.Button
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.edit
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.ConfigManager
+import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.ShellManager
+import by.quty.launch.core.model.LoggerTagModel
 import java.util.Locale
 
 /**
@@ -146,10 +149,16 @@ abstract class BaseActivity : AppCompatActivity() {
     // ПЕРЕЗАПУСК ПРИЛОЖЕНИЯ
     // ============================================================
 
-    /** Помечает, что для применения настроек нужен перезапуск. */
+    /** Помечает, что для применения нужен перезапуск. */
     fun markRestartRequired() {
         if (!needsRestart) {
             needsRestart = true
+            try {
+                getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE).edit {
+                    putBoolean(ApiConfig.PREFS_PENDING_RESTART_APPLY, true)
+                }
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -268,7 +277,7 @@ abstract class BaseActivity : AppCompatActivity() {
                 enableImmersiveModeLegacy(currentWindow, strictMode)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            LoggerManager.error(LoggerTagModel.CORE, "BASE.immersive  error", e)
         }
     }
 

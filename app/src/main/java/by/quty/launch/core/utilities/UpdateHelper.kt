@@ -57,7 +57,8 @@ object UpdateHelper {
     /** Размер файла по HEAD; -1 при ошибке. */
     suspend fun getFileSize(url: String): Long = withContext(Dispatchers.IO) {
         try {
-            val connection = URL(url).openConnection() as HttpURLConnection
+            val connection = URL(url).openConnection() as? HttpURLConnection
+                ?: return@withContext -1L
             connection.requestMethod = "HEAD"
             connection.connectTimeout = CoreConfig.CONNECT_TIMEOUT_MS
             connection.readTimeout = CoreConfig.READ_TIMEOUT_MS
@@ -112,7 +113,13 @@ object UpdateHelper {
                 return@withContext null
             }
 
-            connection = URL(url).openConnection() as HttpURLConnection
+            connection = URL(url).openConnection() as? HttpURLConnection
+                ?: run {
+                    withContext(Dispatchers.Main) {
+                        listener.onError(context.getString(R.string.download_error))
+                    }
+                    return@withContext null
+                }
             connection.connectTimeout = connectTimeout
             connection.readTimeout = readTimeout
             connection.connect()
