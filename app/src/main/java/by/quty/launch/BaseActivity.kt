@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
@@ -35,6 +36,9 @@ abstract class BaseActivity : AppCompatActivity() {
     companion object {
         @Volatile
         private var isOrientationLocked = false
+
+        /** Ключ языка приложения. */
+        private const val KEY_APP_LANGUAGE = ApiConfig.PREFS_APP_LANGUAGE
     }
 
     private lateinit var _configManager: ConfigManager
@@ -48,10 +52,10 @@ abstract class BaseActivity : AppCompatActivity() {
 
     /** Применяет язык до создания контекста. */
     override fun attachBaseContext(newBase: Context) {
-        val prefs = newBase.getSharedPreferences("launcher_prefs", MODE_PRIVATE)
+        val prefs = newBase.getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
 
-        val language = if (prefs.contains("app_language")) {
-            prefs.getString("app_language", CoreConfig.DEFAULT_LANGUAGE) ?: CoreConfig.DEFAULT_LANGUAGE
+        val language = if (prefs.contains(KEY_APP_LANGUAGE)) {
+            prefs.getString(KEY_APP_LANGUAGE, CoreConfig.DEFAULT_LANGUAGE) ?: CoreConfig.DEFAULT_LANGUAGE
         } else {
             val systemLang = Locale.getDefault().language
             if (systemLang == CoreConfig.LANGUAGE_RU) CoreConfig.LANGUAGE_RU else CoreConfig.DEFAULT_LANGUAGE
@@ -80,8 +84,8 @@ abstract class BaseActivity : AppCompatActivity() {
 
         _configManager = ConfigManager(this)
 
-        val prefs = getSharedPreferences("launcher_prefs", MODE_PRIVATE)
-        val onboardingCompleted = prefs.getBoolean("onboarding_completed", false)
+        val prefs = getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
+        val onboardingCompleted = prefs.getBoolean(ApiConfig.PREFS_ONBOARDING_COMPLETED, false)
 
         if (!onboardingCompleted && this !is WelcomeActivity) {
             val intent = Intent(this, WelcomeActivity::class.java)
@@ -106,8 +110,8 @@ abstract class BaseActivity : AppCompatActivity() {
 
     /** Тема из prefs (light/dark/system). */
     private fun applyThemeFromPrefs() {
-        val prefs = getSharedPreferences("launcher_prefs", MODE_PRIVATE)
-        val mode = prefs.getString("theme_mode", CoreConfig.DEFAULT_THEME_MODE) ?: CoreConfig.DEFAULT_THEME_MODE
+        val prefs = getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
+        val mode = prefs.getString(ApiConfig.PREFS_THEME_MODE, CoreConfig.DEFAULT_THEME_MODE) ?: CoreConfig.DEFAULT_THEME_MODE
 
         val nightMode = when (mode) {
             "dark" -> AppCompatDelegate.MODE_NIGHT_YES
@@ -120,8 +124,8 @@ abstract class BaseActivity : AppCompatActivity() {
 
     /** Цветовая схема из prefs. */
     private fun applyColorSchemeFromPrefs() {
-        val prefs = getSharedPreferences("launcher_prefs", MODE_PRIVATE)
-        val schemeId = prefs.getString("color_scheme", CoreConfig.DEFAULT_COLOR_SCHEME) ?: CoreConfig.DEFAULT_COLOR_SCHEME
+        val prefs = getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
+        val schemeId = prefs.getString(ApiConfig.PREFS_COLOR_SCHEME, CoreConfig.DEFAULT_COLOR_SCHEME) ?: CoreConfig.DEFAULT_COLOR_SCHEME
 
         val themeRes = when (schemeId) {
             "red" -> R.style.Theme_QutyLaunch_Red

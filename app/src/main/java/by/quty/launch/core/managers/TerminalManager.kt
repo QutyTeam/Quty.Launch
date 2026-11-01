@@ -11,6 +11,7 @@ import androidx.webkit.WebViewCompat
 import by.quty.launch.MainActivity
 import by.quty.launch.R
 import by.quty.launch.api.router.ApiRouter
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.ColorSchemeModel
 import by.quty.launch.core.model.LoggerTagModel
@@ -33,23 +34,23 @@ import kotlinx.serialization.json.longOrNull
 object TerminalManager {
 
     /** Ширина колонки для `pad()`. */
-    private const val STATUS_PAD_WIDTH = 13
+    private const val STATUS_PAD_WIDTH = CoreConfig.TERMINAL_STATUS_PAD_WIDTH
 
     /** Префикс ошибки. */
-    private const val ERROR_PREFIX = "!"
+    private const val ERROR_PREFIX = CoreConfig.TERMINAL_ERROR_PREFIX
 
     // ============================================================
     // КОНСТАНТЫ
     // ============================================================
 
-    private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
-    private const val KEY_FORCE_SHOW_ONBOARDING = "force_show_onboarding"
+    private const val KEY_ONBOARDING_COMPLETED = ApiConfig.PREFS_ONBOARDING_COMPLETED
+    private const val KEY_FORCE_SHOW_ONBOARDING = ApiConfig.PREFS_FORCE_SHOW_ONBOARDING
 
-    private const val PREFS_LAUNCHER = "launcher_prefs"
-    private const val PREFS_DEVELOPER = "developer_prefs"
+    private const val PREFS_LAUNCHER = ApiConfig.PREFS_LAUNCHER_NAME
+    private const val PREFS_DEVELOPER = ApiConfig.PREFS_DEVELOPER_NAME
 
     /** Порог свободного места для doctor. */
-    private const val DOCTOR_MIN_FREE_SPACE_BYTES = 10L * 1024 * 1024
+    private const val DOCTOR_MIN_FREE_SPACE_BYTES = CoreConfig.DOCTOR_MIN_FREE_SPACE_BYTES
 
     /** Максимальный возраст кэша приложений для doctor. */
     private const val DOCTOR_CACHE_MAX_AGE_MS = CoreConfig.CACHE_APPS_VALIDITY_MS
@@ -332,7 +333,7 @@ object TerminalManager {
     /** Активен ли DevMode. */
     fun isDevModeEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_DEVELOPER, Context.MODE_PRIVATE)
-        return prefs.getBoolean("developer_mode", false)
+        return prefs.getBoolean(ApiConfig.PREFS_DEVELOPER_MODE, false)
     }
 
     /** Разбирает строку на имя команды и аргументы. */

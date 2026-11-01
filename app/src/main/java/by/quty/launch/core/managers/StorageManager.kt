@@ -11,6 +11,8 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.Locale
 
+import by.quty.launch.configs.CoreConfig
+
 /**
  * Централизованный менеджер для работы с хранилищем
  * Универсальный API для всех операций с файлами
@@ -29,14 +31,14 @@ import java.util.Locale
 class StorageManager(private val context: Context) {
 
     companion object {
-        // Имена директорий
-        private const val DIR_SHELLS = "shells"
-        private const val DIR_UPDATES = "updates"
-        private const val DIR_CACHE = "cache"
-        private const val DIR_TEMP = "temp"
-        private const val DIR_LOGS = "logs"
+        // Имена директорий — в CoreConfig
+        private const val DIR_SHELLS = CoreConfig.STORAGE_DIR_SHELLS
+        private const val DIR_UPDATES = CoreConfig.STORAGE_DIR_UPDATES
+        private const val DIR_CACHE = CoreConfig.STORAGE_DIR_CACHE
+        private const val DIR_TEMP = CoreConfig.STORAGE_DIR_TEMP
+        private const val DIR_LOGS = CoreConfig.STORAGE_DIR_LOGS
 
-        private const val EXT_TEMP = ".tmp"
+        private const val EXT_TEMP = CoreConfig.STORAGE_EXT_TEMP
     }
 
     // ============================================================

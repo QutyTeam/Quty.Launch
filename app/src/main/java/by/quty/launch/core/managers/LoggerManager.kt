@@ -3,6 +3,8 @@ package by.quty.launch.core.managers
 
 import android.content.Context
 import androidx.core.content.edit
+import by.quty.launch.configs.ApiConfig
+import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.LoggerEntryModel
 import by.quty.launch.core.model.LoggerLevelModel
 import by.quty.launch.core.model.LoggerTagModel
@@ -21,10 +23,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 object LoggerManager {
 
     /** Максимум записей в буфере. */
-    private const val MAX_ENTRIES = 500
+    private const val MAX_ENTRIES = CoreConfig.LOGGER_MAX_ENTRIES
 
     /** Имя prefs для настроек логгера. */
-    private const val PREFS_NAME = "terminal_prefs"
+    private const val PREFS_NAME = ApiConfig.PREFS_TERMINAL_NAME
 
     private const val KEY_ENABLED = "logger_enabled"
     private const val KEY_AUTO_SAVE = "logger_auto_save"
@@ -33,7 +35,7 @@ object LoggerManager {
     private const val KEY_FILTER_TAGS = "logger_filter_tags"
 
     /** Лимит длины details по умолчанию. */
-    const val DEFAULT_DETAILS_LIMIT = 3000
+    const val DEFAULT_DETAILS_LIMIT = CoreConfig.LOGGER_DEFAULT_DETAILS_LIMIT
 
     /** Кольцевой буфер записей. */
     private val buffer = ConcurrentLinkedDeque<LoggerEntryModel>()

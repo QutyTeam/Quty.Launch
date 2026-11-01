@@ -91,6 +91,15 @@ object CoreConfig {
     /** Задержка перед первой фоновой проверкой после старта (мс) */
     const val AUTO_CHECK_START_DELAY_MS = 2000L
 
+    /** Ключ prefs: включена ли авто-проверка */
+    const val UPDATE_PREFS_AUTO_CHECK_ENABLED = "auto_check_enabled"
+
+    /** Ключ prefs: интервал авто-проверки (в часах) */
+    const val UPDATE_PREFS_AUTO_CHECK_INTERVAL_HOURS = "auto_check_interval_hours"
+
+    /** Ключ prefs: время последней проверки */
+    const val UPDATE_PREFS_LAST_CHECK_TIME = "last_check_time"
+
     /** Семантический цвет маркера — обычное обновление */
     const val BADGE_COLOR_ACCENT = "accent"
 
@@ -176,11 +185,51 @@ object CoreConfig {
     // ===== ХРАНИЛИЩЕ ============================================
     // ============================================================
 
+    /** Имена директорий хранилища. */
+    const val STORAGE_DIR_SHELLS = "shells"
+    const val STORAGE_DIR_UPDATES = "updates"
+    const val STORAGE_DIR_CACHE = "cache"
+    const val STORAGE_DIR_TEMP = "temp"
+    const val STORAGE_DIR_LOGS = "logs"
+
+    /** Расширение временных файлов. */
+    const val STORAGE_EXT_TEMP = ".tmp"
+
     /** Префикс имени APK файла при сохранении */
     const val APK_FILE_PREFIX = "Quty.Launch"
 
     /** Ключ для метки завершения загрузки APK в SharedPreferences */
     const val DOWNLOAD_COMPLETE_KEY = "download_complete_"
+
+    // ============================================================
+    // ===== ТЕРМИНАЛ =============================================
+    // ============================================================
+
+    /** Ширина колонки для `pad()` в терминале. */
+    const val TERMINAL_STATUS_PAD_WIDTH = 13
+
+    /** Префикс сообщения об ошибке в терминале. */
+    const val TERMINAL_ERROR_PREFIX = "!"
+
+    /** Порог свободного места для doctor (10 MB). */
+    const val DOCTOR_MIN_FREE_SPACE_BYTES = 10L * 1024 * 1024
+
+    // ============================================================
+    // ===== ЛОГГЕР ===============================================
+    // ============================================================
+
+    /** Максимум записей в буфере логгера. */
+    const val LOGGER_MAX_ENTRIES = 500
+
+    /** Лимит длины details по умолчанию. */
+    const val LOGGER_DEFAULT_DETAILS_LIMIT = 3000
+
+    // ============================================================
+    // ===== МАГАЗИН ==============================================
+    // ============================================================
+
+    /** Имя файла кэша каталога магазина. */
+    const val STORE_CACHE_FILE_NAME = "store_shells.json"
 
     // ============================================================
     // ===== ВОССТАНОВЛЕНИЕ И СБРОС (RECOVERY) ====================
@@ -210,4 +259,56 @@ object CoreConfig {
 
     /** Ключ флага онбординга */
     const val RECOVERY_KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+
+    // ============================================================
+    // ===== PREFS И КЛЮЧИ ========================================
+    // ============================================================
+
+    /** Имя SharedPreferences для launcher */
+    const val PREFS_LAUNCHER_NAME = "launcher_prefs"
+
+    /** Имя SharedPreferences для developer */
+    const val PREFS_DEVELOPER_NAME = "developer_prefs"
+
+    /** Имя SharedPreferences для терминала/логгера */
+    const val PREFS_TERMINAL_NAME = "terminal_prefs"
+
+    /** Имя SharedPreferences для обновлений приложения */
+    const val PREFS_UPDATE_NAME = "update_prefs"
+
+    /** Ключ: DevMode активен */
+    const val PREFS_DEVELOPER_MODE = "developer_mode"
+
+    /** Ключ: язык приложения */
+    const val PREFS_APP_LANGUAGE = "app_language"
+
+    /** Ключ: режим темы */
+    const val PREFS_THEME_MODE = "theme_mode"
+
+    /** Ключ: цветовая схема */
+    const val PREFS_COLOR_SCHEME = "color_scheme"
+
+    /** Ключ: метка времени прохождения онбординга */
+    const val PREFS_ONBOARDING_TIMESTAMP = "onboarding_timestamp"
+
+    /** Ключ: принудительная ориентация активной оболочки */
+    const val PREFS_FORCED_ORIENTATION = "forced_orientation"
+
+    /** Ключ: показывать Терминал в списке приложений */
+    const val PREFS_SHOW_TERMINAL_IN_APPS = "show_terminal_in_apps"
+
+    /** Ключ: показывать Логгер в списке приложений */
+    const val PREFS_SHOW_LOGGER_IN_APPS = "show_logger_in_apps"
+
+    /** Ключ: онбординг завершён */
+    const val PREFS_ONBOARDING_COMPLETED = "onboarding_completed"
+
+    /** Ключ: принудительно показать онбординг */
+    const val PREFS_FORCE_SHOW_ONBOARDING = "force_show_onboarding"
+
+    /** Префикс ключа истории команд терминала */
+    const val TERMINAL_HISTORY_KEY_PREFIX = "history_"
+
+    /** Максимальное количество хранимых команд истории */
+    const val TERMINAL_MAX_HISTORY = 50
 }

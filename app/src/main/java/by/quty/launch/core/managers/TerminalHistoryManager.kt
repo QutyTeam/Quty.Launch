@@ -3,6 +3,7 @@ package by.quty.launch.core.managers
 
 import android.content.Context
 import androidx.core.content.edit
+import by.quty.launch.configs.ApiConfig
 
 /**
  * Менеджер истории команд терминала.
@@ -18,13 +19,13 @@ import androidx.core.content.edit
 object TerminalHistoryManager {
 
     /** Имя SharedPreferences для терминала. */
-    private const val PREFS_NAME = "terminal_prefs"
+    private const val PREFS_NAME = ApiConfig.PREFS_TERMINAL_NAME
 
     /** Префикс ключа истории. */
-    private const val KEY_PREFIX = "history_"
+    private const val KEY_PREFIX = ApiConfig.TERMINAL_HISTORY_KEY_PREFIX
 
     /** Максимальное количество хранимых команд. */
-    private const val MAX_HISTORY = 50
+    private const val MAX_HISTORY = ApiConfig.TERMINAL_MAX_HISTORY
 
     /**
      * Добавляет команду в историю.

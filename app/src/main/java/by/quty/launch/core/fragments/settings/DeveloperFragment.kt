@@ -23,6 +23,7 @@ import by.quty.launch.BaseActivity
 import by.quty.launch.MainActivity
 import by.quty.launch.R
 import by.quty.launch.SettingsActivity
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.core.managers.CacheManager
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
@@ -321,10 +322,10 @@ class DeveloperFragment : Fragment() {
 
     /** Сбрасывает onboarding_completed + ставит force_show_onboarding. */
     private fun performResetOnboarding() {
-        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val prefs = requireContext().getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, Context.MODE_PRIVATE)
         prefs.edit {
-            remove("onboarding_completed")
-            putBoolean("force_show_onboarding", true)
+            remove(ApiConfig.PREFS_ONBOARDING_COMPLETED)
+            putBoolean(ApiConfig.PREFS_FORCE_SHOW_ONBOARDING, true)
         }
 
         (activity as? SettingsActivity)?.markRestartRequired()
@@ -440,8 +441,8 @@ class DeveloperFragment : Fragment() {
     }
 
     companion object {
-        private const val PREFS_DEVELOPER = "developer_prefs"
-        private const val KEY_SHOW_TERMINAL = "show_terminal_in_apps"
-        private const val KEY_SHOW_LOGGER = "show_logger_in_apps"
+        private const val PREFS_DEVELOPER = ApiConfig.PREFS_DEVELOPER_NAME
+        private const val KEY_SHOW_TERMINAL = ApiConfig.PREFS_SHOW_TERMINAL_IN_APPS
+        private const val KEY_SHOW_LOGGER = ApiConfig.PREFS_SHOW_LOGGER_IN_APPS
     }
 }

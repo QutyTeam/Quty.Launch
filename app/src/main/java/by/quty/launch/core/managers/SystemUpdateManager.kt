@@ -10,6 +10,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.edit
 import by.quty.launch.R
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.utilities.UpdateHelper
@@ -56,7 +57,7 @@ class SystemUpdateManager(private val context: Context) {
 
     private val versionUrl = CoreConfig.UPDATE_SERVER_URL
 
-    private val prefs = context.getSharedPreferences("update_prefs", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(ApiConfig.PREFS_UPDATE_NAME, Context.MODE_PRIVATE)
 
     init {
         cleanupOldDownloadMarks()
@@ -523,9 +524,9 @@ class SystemUpdateManager(private val context: Context) {
     // ============================================================
 
     companion object {
-        private const val KEY_AUTO_CHECK_ENABLED = "auto_check_enabled"
-        private const val KEY_AUTO_CHECK_INTERVAL_HOURS = "auto_check_interval_hours"
-        private const val KEY_LAST_CHECK_TIME = "last_check_time"
+        private const val KEY_AUTO_CHECK_ENABLED = CoreConfig.UPDATE_PREFS_AUTO_CHECK_ENABLED
+        private const val KEY_AUTO_CHECK_INTERVAL_HOURS = CoreConfig.UPDATE_PREFS_AUTO_CHECK_INTERVAL_HOURS
+        private const val KEY_LAST_CHECK_TIME = CoreConfig.UPDATE_PREFS_LAST_CHECK_TIME
 
         /** Общий кэш последнего результата (на процесс). */
         @Volatile

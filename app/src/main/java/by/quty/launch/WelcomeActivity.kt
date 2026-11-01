@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.PermissionManager
@@ -377,11 +378,11 @@ class WelcomeActivity : BaseActivity() {
             "CORE.onboarding  completed"
         )
 
-        val prefs = getSharedPreferences("launcher_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
         prefs.edit {
-            putBoolean("onboarding_completed", true)
-            putLong("onboarding_timestamp", System.currentTimeMillis())
-            remove("force_show_onboarding")
+            putBoolean(ApiConfig.PREFS_ONBOARDING_COMPLETED, true)
+            putLong(ApiConfig.PREFS_ONBOARDING_TIMESTAMP, System.currentTimeMillis())
+            remove(ApiConfig.PREFS_FORCE_SHOW_ONBOARDING)
         }
 
         val intent = Intent(this, MainActivity::class.java)
@@ -400,8 +401,8 @@ class WelcomeActivity : BaseActivity() {
         updatePermissionsUI()
 
         // force_show_onboarding: не автозапускаем Main, даже если разрешения уже есть.
-        val forceShow = getSharedPreferences("launcher_prefs", MODE_PRIVATE)
-            .getBoolean("force_show_onboarding", false)
+        val forceShow = getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
+            .getBoolean(ApiConfig.PREFS_FORCE_SHOW_ONBOARDING, false)
 
         if (forceShow) return
 

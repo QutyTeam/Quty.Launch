@@ -329,7 +329,7 @@ class StoreManager(private val context: Context) {
 
     companion object {
 
-        private const val CACHE_FILE_NAME = "store_shells.json"
+        private const val CACHE_FILE_NAME = CoreConfig.STORE_CACHE_FILE_NAME
 
         /**
          * Собирает объединённый список элементов магазина.

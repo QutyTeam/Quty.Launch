@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.core.content.edit
 import by.quty.launch.R
 import by.quty.launch.api.router.ApiRouter
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.LoggerTagModel
 import kotlinx.coroutines.Dispatchers
@@ -220,14 +221,14 @@ class ShellManager(
 
     /** Сохраняет forced_orientation активной оболочки в prefs. */
     private fun saveForcedOrientation() {
-        val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, Context.MODE_PRIVATE)
         val forcedOrientation = getForcedOrientationFromActiveShell()
 
         prefs.edit {
             if (forcedOrientation != null) {
-                putString("forced_orientation", forcedOrientation)
+                putString(ApiConfig.PREFS_FORCED_ORIENTATION, forcedOrientation)
             } else {
-                remove("forced_orientation")
+                remove(ApiConfig.PREFS_FORCED_ORIENTATION)
             }
         }
     }

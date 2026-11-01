@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.recyclerview.widget.LinearLayoutManager
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.core.adapters.SettingsMenuAdapter
 import by.quty.launch.core.fragments.settings.AboutFragment
 import by.quty.launch.core.fragments.settings.DeveloperFragment
@@ -259,8 +260,8 @@ class SettingsActivity : BaseActivity() {
 
     /** Строит меню: DevMode-пункт только при активном DevMode; маркер на «Центр обновления». */
     private fun buildMenuItems(): List<MenuModel> {
-        val prefs = getSharedPreferences("developer_prefs", MODE_PRIVATE)
-        val isDevMode = prefs.getBoolean("developer_mode", false)
+        val prefs = getSharedPreferences(ApiConfig.PREFS_DEVELOPER_NAME, MODE_PRIVATE)
+        val isDevMode = prefs.getBoolean(ApiConfig.PREFS_DEVELOPER_MODE, false)
 
         val cachedUpdate = try {
             SystemUpdateManager(this).getCachedUpdate()

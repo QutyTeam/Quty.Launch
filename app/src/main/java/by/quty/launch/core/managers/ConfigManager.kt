@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.ColorSchemeModel
 import by.quty.launch.core.model.LoggerTagModel
@@ -16,7 +17,7 @@ import java.util.Locale
  */
 class ConfigManager(context: Context) {
 
-    private val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, Context.MODE_PRIVATE)
     private val appContext = context.applicationContext
 
     init {
@@ -159,7 +160,7 @@ class ConfigManager(context: Context) {
 
     /** Возвращает id текущей цветовой схемы. */
     fun getColorScheme(): String {
-        return prefs.getString("color_scheme", getDefaultColorScheme()) ?: getDefaultColorScheme()
+        return prefs.getString(ApiConfig.PREFS_COLOR_SCHEME, getDefaultColorScheme()) ?: getDefaultColorScheme()
     }
 
     /** Сохраняет цветовую схему. */
@@ -167,7 +168,7 @@ class ConfigManager(context: Context) {
         val previous = getColorScheme()
         if (previous == schemeId) return
 
-        prefs.edit { putString("color_scheme", schemeId) }
+        prefs.edit { putString(ApiConfig.PREFS_COLOR_SCHEME, schemeId) }
         LoggerManager.info(
             LoggerTagModel.CONFIG,
             "CONFIG.color  $previous > $schemeId"
@@ -345,8 +346,8 @@ class ConfigManager(context: Context) {
         const val LANGUAGE_RU = CoreConfig.LANGUAGE_RU
         const val LANGUAGE_EN = CoreConfig.LANGUAGE_EN
 
-        private const val KEY_THEME_MODE = "theme_mode"
-        private const val KEY_LANGUAGE = "app_language"
+        private const val KEY_THEME_MODE = ApiConfig.PREFS_THEME_MODE
+        private const val KEY_LANGUAGE = ApiConfig.PREFS_APP_LANGUAGE
         private const val KEY_NEED_RESTART_FOR_ORIENTATION = "need_restart_for_orientation"
         private const val KEY_ANIMATIONS_ENABLED = "animations_enabled"
         private const val KEY_SAFE_MODE = "safe_mode_active"

@@ -191,9 +191,9 @@ class GetApps(
     }
 
     companion object {
-        private const val PREFS_DEVELOPER = "developer_prefs"
-        private const val KEY_DEVELOPER_MODE = "developer_mode"
-        private const val KEY_SHOW_TERMINAL = "show_terminal_in_apps"
-        private const val KEY_SHOW_LOGGER = "show_logger_in_apps"
+        private const val PREFS_DEVELOPER = ApiConfig.PREFS_DEVELOPER_NAME
+        private const val KEY_DEVELOPER_MODE = ApiConfig.PREFS_DEVELOPER_MODE
+        private const val KEY_SHOW_TERMINAL = ApiConfig.PREFS_SHOW_TERMINAL_IN_APPS
+        private const val KEY_SHOW_LOGGER = ApiConfig.PREFS_SHOW_LOGGER_IN_APPS
     }
 }

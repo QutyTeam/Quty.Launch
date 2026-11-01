@@ -16,6 +16,7 @@ import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import by.quty.launch.R
 import by.quty.launch.SettingsActivity
+import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.CacheManager
 import by.quty.launch.core.managers.ConfigManager
@@ -242,12 +243,12 @@ class AboutFragment : Fragment() {
 
     /** Переключает DevMode, помечает restart, обновляет меню. */
     private fun toggleDeveloperMode() {
-        val prefs = requireContext().getSharedPreferences("developer_prefs", Context.MODE_PRIVATE)
-        val isCurrentlyEnabled = prefs.getBoolean("developer_mode", false)
+        val prefs = requireContext().getSharedPreferences(ApiConfig.PREFS_DEVELOPER_NAME, Context.MODE_PRIVATE)
+        val isCurrentlyEnabled = prefs.getBoolean(ApiConfig.PREFS_DEVELOPER_MODE, false)
 
         val newState = !isCurrentlyEnabled
         prefs.edit {
-            putBoolean("developer_mode", newState)
+            putBoolean(ApiConfig.PREFS_DEVELOPER_MODE, newState)
         }
 
         CacheManager.invalidateCache()
