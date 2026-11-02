@@ -10,7 +10,6 @@ import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -32,7 +31,7 @@ import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.model.ColorSchemeModel
 
 /**
- * «Персонализация»: активная оболочка, магазин, цветовые схемы, анимации, Safe Mode баннер.
+ * «Персонализация»: активная оболочка, магазин, цветовые схемы, анимации.
  */
 class ShellFragment : Fragment() {
 
@@ -51,9 +50,6 @@ class ShellFragment : Fragment() {
 
     private lateinit var animationsSwitch: SwitchCompat
     private lateinit var animationsSystemHint: TextView
-
-    private lateinit var safeModeBanner: View
-    private lateinit var safeModeExitButton: Button
 
     private var needsRestart = false
 
@@ -87,9 +83,6 @@ class ShellFragment : Fragment() {
         animationsSwitch = view.findViewById(R.id.animations_switch)
         animationsSystemHint = view.findViewById(R.id.animations_system_hint)
 
-        safeModeBanner = view.findViewById(R.id.safe_mode_banner)
-        safeModeExitButton = view.findViewById(R.id.safe_mode_exit_button)
-
         shellMenuButton.setOnClickListener {
             showShellInfoDialog()
         }
@@ -100,11 +93,10 @@ class ShellFragment : Fragment() {
 
         setupColorSchemeSelector(view)
         setupAnimationsSection()
-        setupSafeModeBanner()
         refreshActiveShell()
     }
 
-    /** Обновляет активную оболочку, анимации и Safe Mode при возврате. */
+    /** Обновляет активную оболочку и анимации при возврате. */
     override fun onResume() {
         super.onResume()
 
@@ -114,43 +106,6 @@ class ShellFragment : Fragment() {
 
         refreshActiveShell()
         setupAnimationsSection()
-        setupSafeModeBanner()
-    }
-
-    // ============================================================
-    // SAFE MODE
-    // ============================================================
-
-    /** Баннер Safe Mode + кнопка «Выйти» (снимает флаг + рестарт). */
-    private fun setupSafeModeBanner() {
-        val isSafeMode = configManager.isSafeModeActive()
-
-        if (isSafeMode) {
-            safeModeBanner.visibility = View.VISIBLE
-
-            safeModeExitButton.setOnClickListener {
-                configManager.setSafeModeActive(false)
-                Toast.makeText(
-                    requireContext(),
-                    R.string.safe_mode_exited_toast,
-                    Toast.LENGTH_LONG
-                ).show()
-
-                val baseActivity = activity as? by.quty.launch.BaseActivity
-                val intent = Intent(requireContext(), by.quty.launch.MainActivity::class.java)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                if (baseActivity != null) {
-                    baseActivity.startActivityAnimated(intent)
-                    baseActivity.finishAnimated()
-                } else {
-                    startActivity(intent)
-                    requireActivity().finish()
-                }
-            }
-        } else {
-            safeModeBanner.visibility = View.GONE
-            safeModeExitButton.setOnClickListener(null)
-        }
     }
 
     // ============================================================

@@ -267,9 +267,9 @@
     <string name="settings_personalization_shell_preview_description">Превью оболочки</string>
 
     <!-- Safe Mode -->
-    <string name="safe_mode_banner_title">Безопасный режим</string>
-    <string name="safe_mode_banner_message">Активна стандартная оболочка. Выбранная вами оболочка могла сломаться. Смените её или выйдите из безопасного режима, чтобы попробовать снова.</string>
     <string name="safe_mode_exit_button">Выйти из безопасного режима</string>
+    <string name="safe_mode_exit_dialog_title">Безопасный режим</string>
+    <string name="safe_mode_exit_dialog_message">Активна стандартная оболочка. Выйти из безопасного режима и вернуться к выбранной оболочке?</string>
     <string name="safe_mode_activated_toast">Безопасный режим активирован</string>
     <string name="safe_mode_exited_toast">Безопасный режим отключён. Перезапуск…</string>
     <string name="safe_mode_badge_text">Safe Mode</string>

@@ -21,6 +21,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -61,6 +62,9 @@ abstract class BaseActivity : AppCompatActivity() {
 
     /** Плашка «Safe Mode» поверх контента (видна на всех экранах активности). */
     private var safeModeBadge: TextView? = null
+
+    /** Диалог выхода из Safe Mode уже открыт (защита от повторного открытия). */
+    private var isSafeModeExitDialogShown = false
 
     /** Применяет язык до создания контекста. */
     override fun attachBaseContext(newBase: Context) {
@@ -187,6 +191,12 @@ abstract class BaseActivity : AppCompatActivity() {
                 resources.getDimensionPixelSize(R.dimen.spacing_xs)
             )
             elevation = resources.displayMetrics.density * 8f
+            isClickable = true
+            isFocusable = true
+            // Тап по плашке — диалог выхода из Safe Mode.
+            setOnClickListener {
+                showSafeModeExitDialog()
+            }
         }
 
         val params = FrameLayout.LayoutParams(
@@ -212,6 +222,47 @@ abstract class BaseActivity : AppCompatActivity() {
 
         root.addView(badge, params)
         safeModeBadge = badge
+    }
+
+    /** Glassmorphism-диалог подтверждения выхода из Safe Mode (снимает флаг и перезапускает приложение). */
+    @SuppressLint("InflateParams")
+    private fun showSafeModeExitDialog() {
+        if (isSafeModeExitDialogShown) return
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_safe_mode_exit, null)
+
+        val dialog = AlertDialog.Builder(
+            this,
+            R.style.Theme_QutyLaunch_AlertDialog_Transparent
+        )
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        dialog.setOnDismissListener { isSafeModeExitDialogShown = false }
+        isSafeModeExitDialogShown = true
+
+        dialogView.findViewById<Button>(R.id.safe_mode_exit_cancel_button).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.safe_mode_exit_ok_button).setOnClickListener {
+            dialog.dismiss()
+            exitSafeMode()
+        }
+
+        dialog.show()
+    }
+
+    /** Отключает Safe Mode и перезапускает приложение. */
+    private fun exitSafeMode() {
+        configManager.setSafeModeActive(false)
+        Toast.makeText(this, R.string.safe_mode_exited_toast, Toast.LENGTH_LONG).show()
+
+        val intent = Intent(this, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        startActivityAnimated(intent)
+        finishAnimated()
     }
 
     // ============================================================
