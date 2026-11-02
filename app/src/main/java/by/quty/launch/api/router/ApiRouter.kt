@@ -102,6 +102,40 @@ object ApiRouter {
         activeMethods.clear()
     }
 
+    // ============================================================
+    // КОНТЕКСТ АКТИВНОЙ ОБОЛОЧКИ
+    // ============================================================
+
+    /** Имя оболочки, загруженной в WebView; null — контекст ещё не установлен. */
+    @Volatile
+    private var activeShellName: String? = null
+
+    /** Методы, заявленные в manifest.json активной оболочки. */
+    @Volatile
+    private var declaredMethods: Set<String> = emptySet()
+
+    /** Запоминает оболочку и список методов, которые она заявила в манифесте. */
+    fun setShellContext(shellName: String?, declared: Set<String>) {
+        activeShellName = shellName
+        declaredMethods = declared
+    }
+
+    /** Имя активной оболочки (null, если контекст не установлен). */
+    fun getShellName(): String? = activeShellName
+
+    /** Методы, заявленные активной оболочкой. */
+    fun getDeclaredMethods(): Set<String> = declaredMethods
+
+    /** true, если метод заявлен в манифесте активной оболочки. */
+    fun isDeclared(methodName: String): Boolean {
+        return methodName in declaredMethods
+    }
+
+    /** true, если метод зарегистрирован в ядре. */
+    fun hasMethod(methodName: String): Boolean {
+        return methods.containsKey(methodName)
+    }
+
     /** Обрезает params для краткого message. */
     private fun formatParams(params: String?): String {
         if (params.isNullOrEmpty()) return "null"

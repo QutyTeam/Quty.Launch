@@ -199,6 +199,8 @@ class ShellManager(
             restoreDefaultShell()
         }
 
+        ApiRouter.setShellContext(activeShell?.name, activeShell?.apiMethods?.toSet() ?: emptySet())
+
         saveForcedOrientation()
     }
 
@@ -477,6 +479,7 @@ class ShellManager(
         val shells = getAvailableShells()
         val activeShellId = configManager.getActiveShell()
         activeShell = shells.find { it.name == activeShellId }
+        ApiRouter.setShellContext(activeShell?.name, activeShell?.apiMethods?.toSet() ?: emptySet())
         saveForcedOrientation()
 
         LoggerManager.info(
@@ -499,6 +502,10 @@ class ShellManager(
         }
 
         activeShell = shell
+
+        // Роутер должен знать, что именно эта оболочка заявила в манифесте:
+        // незаявленные методы он будет спрашивать у пользователя.
+        ApiRouter.setShellContext(shell.name, shell.apiMethods.toSet())
 
         if (previousShellName != shell.name) {
             ApiRouter.clearActiveMethods()

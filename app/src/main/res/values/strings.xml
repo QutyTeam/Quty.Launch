@@ -326,7 +326,21 @@
     <string name="api_methods_legend_green">Метод заявлен в manifest и используется оболочкой</string>
     <string name="api_methods_legend_orange">Метод используется, но НЕ заявлен в manifest оболочки</string>
     <string name="api_methods_legend_gray">Метод заявлен в manifest, но пока не вызывался</string>
+    <string name="api_methods_legend_red">Метод не заявлен в manifest, и доступ к нему запрещён пользователем</string>
     <string name="api_methods_legend_ok">Понятно</string>
+
+    <!-- Диалог согласия на незаявленный метод -->
+    <string name="api_permission_dialog_title">Запрос доступа к API</string>
+    <string name="api_permission_dialog_message" formatted="false">Оболочка «%1$s» вызывает метод %2$s, который не заявлен в её manifest.json. Разрешить доступ?</string>
+    <string name="api_permission_dialog_hint">Решение запоминается для этой оболочки. Изменить его можно в Настройки → API методы.</string>
+    <string name="api_permission_allow">Разрешить</string>
+    <string name="api_permission_deny">Запретить</string>
+    <string name="api_permission_denied_error">Доступ к методу %s запрещён</string>
+    <string name="api_methods_denied_badge">Запрещён</string>
+    <string name="api_methods_reset_title">Сбросить разрешения</string>
+    <string name="api_methods_reset_confirm">Сбросить</string>
+    <string name="api_methods_reset_message">Все решения по незаявленным методам будут удалены, и приложение спросит заново. Продолжить?</string>
+    <string name="api_methods_reset_done">Разрешения сброшены</string>
 
     <!-- Описания методов -->
     <string name="api_getapps_desc">Список установленных приложений</string>

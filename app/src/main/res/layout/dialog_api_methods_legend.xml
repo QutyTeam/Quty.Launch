@@ -156,6 +156,33 @@
 
                         </LinearLayout>
 
+                        <!-- КРАСНАЯ -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingTop="@dimen/spacing_m"
+                            android:paddingBottom="@dimen/spacing_m"
+                            tools:ignore="UseCompoundDrawables">
+
+                            <ImageView
+                                android:layout_width="@dimen/icon_small"
+                                android:layout_height="@dimen/icon_small"
+                                android:layout_marginEnd="@dimen/spacing_m"
+                                android:src="@drawable/ic_update_check"
+                                android:contentDescription="@string/empty"
+                                app:tint="@color/status_error" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                style="@style/Text.Body"
+                                android:text="@string/api_methods_legend_red" />
+
+                        </LinearLayout>
+
                     </LinearLayout>
 
                 </ScrollView>

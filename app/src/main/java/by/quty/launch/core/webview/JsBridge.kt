@@ -6,6 +6,7 @@ import android.webkit.JavascriptInterface
 import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.Core
+import by.quty.launch.core.managers.ApiPermissionGate
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.model.LoggerTagModel
 import kotlinx.coroutines.*
@@ -42,6 +43,12 @@ class JsBridge(
 
         bridgeScope.launch {
             try {
+                // Метод не заявлен в manifest.json — спрашиваем пользователя один раз.
+                if (!ApiPermissionGate.ensureAllowed(method)) {
+                    sendResultToJs(callbackId, buildDeniedJson(method), null)
+                    return@launch
+                }
+
                 val result = withTimeout(timeoutMs.milliseconds) {
                     core.execute(method, params)
                 }
@@ -66,6 +73,19 @@ class JsBridge(
                 val error = buildErrorJson(e.message ?: "Unknown error")
                 sendResultToJs(callbackId, error, e)
             }
+        }
+    }
+
+    /** Формирует JSON отказа с кодом `denied`, чтобы JS отличал запрет от сбоя метода. */
+    private fun buildDeniedJson(method: String): String {
+        return try {
+            JSONObject().apply {
+                put("success", false)
+                put("code", "denied")
+                put("error", context.getString(R.string.api_permission_denied_error, method))
+            }.toString()
+        } catch (_: Exception) {
+            """{"success":false,"code":"denied","error":"Permission denied"}"""
         }
     }
 

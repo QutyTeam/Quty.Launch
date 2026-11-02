@@ -163,6 +163,29 @@ if ($isReleaseBuild) {
 
 Write-Divider
 
+# --- Вопрос 0.1: Суффикс версии ---
+Write-Question "Какой суффикс версии (versionNameSuffix) использовать?"
+Write-Info "  1) Alpha   — сборка в стадии разработки (по умолчанию)"
+Write-Info "  2) Release — стабильная сборка"
+Write-Host ""
+
+$suffixChoice = $null
+while ($suffixChoice -notin @("1", "2")) {
+    $answer = Read-Answer -Prompt "Выберите (1/2) [1]:"
+    if ([string]::IsNullOrEmpty($answer)) { $answer = "1" }
+    $suffixChoice = $answer
+}
+
+$newVersionSuffix = if ($suffixChoice -eq "2") { "Release" } else { "Alpha" }
+
+if ($newVersionSuffix -eq $currentVersionSuffix) {
+    Write-Success "Суффикс: $newVersionSuffix (без изменений)"
+} else {
+    Write-Success "Суффикс: $currentVersionSuffix → $newVersionSuffix"
+}
+
+Write-Divider
+
 if ($isReleaseBuild) {
 
 # --- Вопрос 1: Новая версия ---
@@ -242,18 +265,29 @@ $newVersionCode = $currentVersionCode + 1
 # ============================================
 # ЭТАП: ОБНОВЛЕНИЕ BUILD.GRADLE.KTS
 # ============================================
-if ($isReleaseBuild) {
+$suffixChanged = ($newVersionSuffix -ne $currentVersionSuffix)
+
+if ($isReleaseBuild -or $suffixChanged) {
     Write-StageHeader -Title "ОБНОВЛЕНИЕ BUILD.GRADLE.KTS"
 
-    Write-Step "versionCode: $currentVersionCode → $newVersionCode"
-    Write-Step "versionName: $currentVersionName → $newVersionName"
+    if ($isReleaseBuild) {
+        Write-Step "versionCode: $currentVersionCode → $newVersionCode"
+        Write-Step "versionName: $currentVersionName → $newVersionName"
+    } else {
+        Write-Step "Версия и versionCode не меняются"
+    }
+    if ($suffixChanged) {
+        Write-Step "versionNameSuffix: $currentVersionSuffix → $newVersionSuffix"
+    }
 
     $newContent = @()
     foreach ($line in ($gradleFile -split "`n")) {
-        if ($line -match 'versionCode\s*=') {
+        if ($isReleaseBuild -and $line -match 'versionCode\s*=') {
             $newContent += "    versionCode = $newVersionCode"
-        } elseif ($line -match 'versionName\s*=' -and $line -notmatch 'versionNameSuffix') {
+        } elseif ($isReleaseBuild -and $line -match 'versionName\s*=' -and $line -notmatch 'versionNameSuffix') {
             $newContent += "    versionName = `"$newVersionName`""
+        } elseif ($suffixChanged -and $line -match 'versionNameSuffix\s*=') {
+            $newContent += "        versionNameSuffix = `"$newVersionSuffix`""
         } else {
             $newContent += $line
         }
@@ -529,7 +563,7 @@ Write-Host ""
 Write-Host "  🏗️  Режим:        " -NoNewline -ForegroundColor Gray
 Write-Host $(if ($isReleaseBuild) { "RELEASE" } else { "DEBUG" }) -ForegroundColor White
 Write-Host "  📦 Версия:       " -NoNewline -ForegroundColor Gray
-Write-Host "$newVersionName $currentVersionSuffix" -ForegroundColor White
+Write-Host "$newVersionName $newVersionSuffix" -ForegroundColor White
 Write-Host "  🔢 Version code: " -NoNewline -ForegroundColor Gray
 Write-Host "$newVersionCode" -ForegroundColor White
 Write-Host "  🧲 Размер:       " -NoNewline -ForegroundColor Gray

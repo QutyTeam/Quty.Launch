@@ -7,21 +7,32 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
+import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.lifecycleScope
+import by.quty.launch.api.router.ApiRouter
 import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.Core
+import by.quty.launch.core.managers.ApiPermissionGate
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.managers.SystemUpdateManager
 import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.webview.JsBridge
 import by.quty.launch.core.webview.LauncherWebView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -97,6 +108,11 @@ class MainActivity : BaseActivity() {
         jsBridge = JsBridge(core, this)
         jsBridge.setWebView(webView)
         webView.addJavascriptInterface(jsBridge, "Android")
+
+        // Незаявленные в манифесте оболочки методы спрашивают разрешение здесь.
+        ApiPermissionGate.setRequester { shellName, methodName ->
+            requestApiPermission(shellName, methodName)
+        }
 
         lastAppliedLanguage = configManager.getLanguageCode()
         lastAppliedAnimations = configManager.isEffectiveAnimationsEnabled()
@@ -198,6 +214,8 @@ class MainActivity : BaseActivity() {
     override fun onDestroy() {
         clearSafeModeState()
 
+        ApiPermissionGate.setRequester(null)
+
         if (::jsBridge.isInitialized) {
             jsBridge.destroy()
         }
@@ -211,8 +229,69 @@ class MainActivity : BaseActivity() {
     }
 
     // ============================================================
-    // ОСТАЛЬНАЯ ЛОГИКА
+    // СОГЛАСИЕ НА НЕЗАЯВЛЕННЫЕ API-МЕТОДЫ
     // ============================================================
+
+    /** Показывает диалог запроса доступа и ждёт ответа пользователя. */
+    private suspend fun requestApiPermission(
+        shellName: String,
+        methodName: String
+    ): Boolean = withContext(Dispatchers.Main) {
+        if (isFinishing || isDestroyed) return@withContext false
+
+        suspendCancellableCoroutine { continuation ->
+            val dialogView = layoutInflater.inflate(R.layout.dialog_api_permission, null)
+
+            val dialog = AlertDialog.Builder(
+                this@MainActivity,
+                R.style.Theme_QutyLaunch_AlertDialog_Transparent
+            )
+                .setView(dialogView)
+                .setCancelable(false)
+                .create()
+
+            dialog.window?.setBackgroundDrawable(
+                android.graphics.Color.TRANSPARENT.toDrawable()
+            )
+
+            dialogView.findViewById<TextView>(R.id.api_permission_message).text =
+                getString(R.string.api_permission_dialog_message, shellName, methodName)
+
+            dialogView.findViewById<TextView>(R.id.api_permission_method_name).text = methodName
+
+            val descriptionRes = ApiRouter.getRegisteredMethods()
+                .firstOrNull { it.name == methodName }
+                ?.descriptionRes
+
+            val descriptionView =
+                dialogView.findViewById<TextView>(R.id.api_permission_method_description)
+
+            if (descriptionRes != null) {
+                descriptionView.setText(descriptionRes)
+            } else {
+                descriptionView.visibility = View.GONE
+            }
+
+            dialogView.findViewById<Button>(R.id.api_permission_deny_button)
+                .setOnClickListener { dialog.dismiss() }
+
+            // Ответ приходит через dismiss: кнопки различаем по флагу.
+            var granted = false
+            dialogView.findViewById<Button>(R.id.api_permission_allow_button)
+                .setOnClickListener {
+                    granted = true
+                    dialog.dismiss()
+                }
+
+            dialog.setOnDismissListener {
+                if (continuation.isActive) continuation.resume(granted)
+            }
+
+            continuation.invokeOnCancellation { dialog.dismiss() }
+
+            dialog.show()
+        }
+    }
 
     /** Логирует новый интент (например, повторный запуск лаунчера). */
     override fun onNewIntent(intent: Intent) {

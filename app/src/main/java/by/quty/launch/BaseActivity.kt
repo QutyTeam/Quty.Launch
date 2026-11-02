@@ -32,6 +32,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
+import by.quty.launch.core.managers.ApiPermissionManager
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.ShellManager
@@ -99,6 +100,7 @@ abstract class BaseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         _configManager = ConfigManager(this)
+        ApiPermissionManager.init(this)
 
         val prefs = getSharedPreferences(ApiConfig.PREFS_LAUNCHER_NAME, MODE_PRIVATE)
         val onboardingCompleted = prefs.getBoolean(ApiConfig.PREFS_ONBOARDING_COMPLETED, false)

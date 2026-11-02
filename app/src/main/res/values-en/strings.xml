@@ -326,7 +326,21 @@
     <string name="api_methods_legend_green">Method is declared in manifest and used by shell</string>
     <string name="api_methods_legend_orange">Method is used but NOT declared in shell manifest</string>
     <string name="api_methods_legend_gray">Method is declared in manifest but not called yet</string>
+    <string name="api_methods_legend_red">Method is not declared in manifest and access is denied by the user</string>
     <string name="api_methods_legend_ok">Got it</string>
+
+    <!-- Permission dialog for undeclared methods -->
+    <string name="api_permission_dialog_title">API access request</string>
+    <string name="api_permission_dialog_message" formatted="false">Shell \"%1$s\" calls method %2$s, which is not declared in its manifest.json. Allow access?</string>
+    <string name="api_permission_dialog_hint">The decision is remembered for this shell. You can change it in Settings → API methods.</string>
+    <string name="api_permission_allow">Allow</string>
+    <string name="api_permission_deny">Deny</string>
+    <string name="api_permission_denied_error">Access to method %s is denied</string>
+    <string name="api_methods_denied_badge">Denied</string>
+    <string name="api_methods_reset_title">Reset permissions</string>
+    <string name="api_methods_reset_confirm">Reset</string>
+    <string name="api_methods_reset_message">All decisions for undeclared methods will be removed and the app will ask again. Continue?</string>
+    <string name="api_methods_reset_done">Permissions reset</string>
 
     <!-- Method descriptions -->
     <string name="api_getapps_desc">List of installed apps</string>

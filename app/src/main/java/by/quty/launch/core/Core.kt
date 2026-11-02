@@ -4,6 +4,7 @@ package by.quty.launch.core
 import android.content.Context
 import by.quty.launch.api.ApiInitializer
 import by.quty.launch.api.router.ApiRouter
+import by.quty.launch.core.managers.ApiPermissionManager
 import by.quty.launch.core.managers.CacheManager
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.StorageManager
@@ -18,6 +19,7 @@ class Core(context: Context) {
     init {
         LoggerManager.init(context)
         ApiInitializer.init(context)
+        ApiPermissionManager.init(context)
 
         val storageManager = StorageManager(context)
         CacheManager.init(storageManager, context)

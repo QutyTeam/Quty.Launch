@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -18,6 +19,7 @@ import by.quty.launch.R
 import by.quty.launch.SettingsActivity
 import by.quty.launch.api.base.BaseApiMethod
 import by.quty.launch.api.router.ApiRouter
+import by.quty.launch.core.managers.ApiPermissionManager
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
 
@@ -36,6 +38,7 @@ class ApiMethodsFragment : Fragment() {
     private lateinit var otherSectionHeader: TextView
     private lateinit var otherContainer: LinearLayout
     private lateinit var emptyText: TextView
+    private lateinit var resetButton: android.widget.Button
 
     /** Создаёт view фрагмента. */
     override fun onCreateView(
@@ -64,9 +67,14 @@ class ApiMethodsFragment : Fragment() {
         otherSectionHeader = view.findViewById(R.id.api_methods_other_header)
         otherContainer = view.findViewById(R.id.api_methods_other_container)
         emptyText = view.findViewById(R.id.api_methods_empty)
+        resetButton = view.findViewById(R.id.api_methods_reset_button)
 
         infoIcon.setOnClickListener {
             showLegendDialog()
+        }
+
+        resetButton.setOnClickListener {
+            showResetDialog()
         }
 
         rebuild()
@@ -93,6 +101,17 @@ class ApiMethodsFragment : Fragment() {
         val activeShell = shellManager.getActiveShell()
         val declaredNames = activeShell?.apiMethods?.toSet() ?: emptySet()
 
+        // Решения пользователя по незаявленным методам активной оболочки.
+        val decisions: Map<String, Boolean> = activeShell?.name
+            ?.let { shellName ->
+                ApiPermissionManager.getMethodNames(shellName).associateWith { methodName ->
+                    ApiPermissionManager.getDecision(shellName, methodName) == true
+                }
+            }
+            ?: emptyMap()
+
+        resetButton.visibility = if (decisions.isEmpty()) View.GONE else View.VISIBLE
+
         if (allMethods.isEmpty()) {
             emptyText.visibility = View.VISIBLE
             infoIcon.visibility = View.GONE
@@ -107,10 +126,10 @@ class ApiMethodsFragment : Fragment() {
         emptyText.visibility = View.GONE
 
         val activeList = allMethods.filter {
-            it.name in declaredNames || it.name in activeNames
+            it.name in declaredNames || it.name in activeNames || it.name in decisions
         }
         val otherList = allMethods.filter {
-            it.name !in declaredNames && it.name !in activeNames
+            it.name !in declaredNames && it.name !in activeNames && it.name !in decisions
         }
 
         // «Аномалия» — метод, у которого цвет галочки не зелёный.
@@ -144,7 +163,8 @@ class ApiMethodsFragment : Fragment() {
                 val row = createMethodRow(
                     method = method,
                     isDeclared = method.name in declaredNames,
-                    isCalled = method.name in activeNames
+                    isCalled = method.name in activeNames,
+                    isDenied = decisions[method.name] == false
                 )
                 activeContainer.addView(row)
 
@@ -167,7 +187,8 @@ class ApiMethodsFragment : Fragment() {
                 val row = createMethodRow(
                     method = method,
                     isDeclared = false,
-                    isCalled = false
+                    isCalled = false,
+                    isDenied = false
                 )
                 otherContainer.addView(row)
 
@@ -185,11 +206,12 @@ class ApiMethodsFragment : Fragment() {
     // СОЗДАНИЕ СТРОК
     // ============================================================
 
-    /** Строка метода. Галочка: зелёная / оранжевая / серая / нет. */
+    /** Строка метода. Галочка: зелёная / оранжевая / серая / красная / нет. */
     private fun createMethodRow(
         method: BaseApiMethod<*>,
         isDeclared: Boolean,
-        isCalled: Boolean
+        isCalled: Boolean,
+        isDenied: Boolean
     ): View {
         val view = layoutInflater.inflate(
             R.layout.item_api_method,
@@ -212,6 +234,15 @@ class ApiMethodsFragment : Fragment() {
         description.text = getString(method.descriptionRes)
 
         when {
+            isDenied -> {
+                check.visibility = View.VISIBLE
+                check.imageTintList = ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.status_error)
+                )
+                description.text = getString(
+                    R.string.api_methods_denied_badge
+                ) + " · " + getString(method.descriptionRes)
+            }
             isCalled && isDeclared -> {
                 check.visibility = View.VISIBLE
                 check.imageTintList = ColorStateList.valueOf(
@@ -287,6 +318,53 @@ class ApiMethodsFragment : Fragment() {
         dialogView.findViewById<android.widget.Button>(R.id.legend_ok_button).setOnClickListener {
             dialog.dismiss()
         }
+
+        dialog.show()
+    }
+
+    // ============================================================
+    // СБРОС РАЗРЕШЕНИЙ
+    // ============================================================
+
+    /** Подтверждение сброса решений по незаявленным методам активной оболочки. */
+    private fun showResetDialog() {
+        val shellName = shellManager.getActiveShell()?.name ?: return
+
+        val dialogView = layoutInflater.inflate(
+            R.layout.dialog_api_methods_reset,
+            null
+        )
+
+        val dialog = AlertDialog.Builder(
+            requireContext(),
+            R.style.Theme_QutyLaunch_AlertDialog_Transparent
+        )
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+
+        dialogView.findViewById<View>(R.id.api_methods_reset_close_button).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<android.widget.Button>(R.id.api_methods_reset_cancel_button)
+            .setOnClickListener {
+                dialog.dismiss()
+            }
+
+        dialogView.findViewById<android.widget.Button>(R.id.api_methods_reset_confirm_button)
+            .setOnClickListener {
+                ApiPermissionManager.reset(shellName)
+                Toast.makeText(
+                    requireContext(),
+                    R.string.api_methods_reset_done,
+                    Toast.LENGTH_SHORT
+                ).show()
+                dialog.dismiss()
+                rebuild()
+            }
 
         dialog.show()
     }

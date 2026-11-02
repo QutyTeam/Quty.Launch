@@ -124,6 +124,17 @@
             android:padding="@dimen/spacing_xs" />
 
         <!-- Отступ снизу -->
+        <Button
+            android:id="@+id/api_methods_reset_button"
+            style="@style/Button.Glass.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/height_button"
+            android:layout_marginStart="@dimen/spacing_s"
+            android:layout_marginEnd="@dimen/spacing_s"
+            android:layout_marginTop="@dimen/spacing_l"
+            android:text="@string/api_methods_reset_title"
+            android:visibility="gone" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="@dimen/spacing_xxl" />
