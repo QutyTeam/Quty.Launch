@@ -388,7 +388,17 @@ abstract class BaseActivity : AppCompatActivity() {
 
     /** Скрывает системные панели. strictMode — не показывать даже при свайпе. */
     protected fun enableImmersiveMode(strictMode: Boolean = false) {
-        if (!configManager.isFullscreenEnabled()) return
+        if (!configManager.isFullscreenEnabled()) {
+            // Полноэкранный режим выключен — слушатель больше не нужен.
+            window?.let {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    removeStrictModeListenerModern(it)
+                } else {
+                    removeStrictModeListenerLegacy(it.decorView)
+                }
+            }
+            return
+        }
 
         val currentWindow = window ?: return
 
@@ -424,17 +434,16 @@ abstract class BaseActivity : AppCompatActivity() {
                 insetsController.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
 
-            if (strictMode) {
-                setupStrictModeListenerModern(window, insetsController)
-            } else {
-                removeStrictModeListenerModern(window)
-            }
+            // Слушатель держим всегда: он мгновенно скрывает бары, которые
+            // система показывает при системном жесте (например, «назад»),
+            // иначе статусбар остаётся видимым пару секунд.
+            setupStrictModeListenerModern(window, insetsController)
         }
 
         window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
     }
 
-    /** Вешает listener, заново скрывающий бары в strict mode (Android 11+). */
+    /** Вешает listener, заново скрывающий системные бары (Android 11+). */
     @SuppressLint("WrongConstant")
     private fun setupStrictModeListenerModern(window: android.view.Window, insetsController: WindowInsetsController) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
@@ -444,7 +453,7 @@ abstract class BaseActivity : AppCompatActivity() {
         val decorView = window.decorView
 
         decorView.setOnApplyWindowInsetsListener { view, insets ->
-            if (configManager.isStrictModeEnabled() && configManager.isFullscreenEnabled()) {
+            if (configManager.isFullscreenEnabled()) {
                 val isStatusBarVisible = insets.isVisible(WindowInsetsCompat.Type.statusBars())
                 val isNavBarVisible = insets.isVisible(WindowInsetsCompat.Type.navigationBars())
 
@@ -489,32 +498,37 @@ abstract class BaseActivity : AppCompatActivity() {
 
         decorView.systemUiVisibility = flags
 
-        if (strictMode) {
-            setupStrictModeListenerLegacy(decorView)
-        } else {
-            removeStrictModeListenerLegacy(decorView)
-        }
+        // Слушатель держим всегда: он мгновенно скрывает бары, показанные
+        // системным жестом, иначе они остаются видимыми пару секунд.
+        setupStrictModeListenerLegacy(decorView)
     }
 
-    /** Вешает listener strict mode для legacy. */
+    /** Вешает listener, заново скрывающий системные бары (legacy). */
     @Suppress("DEPRECATION")
     private fun setupStrictModeListenerLegacy(decorView: View) {
         removeStrictModeListenerLegacy(decorView)
 
         decorView.setOnSystemUiVisibilityChangeListener { visibility ->
-            if (!configManager.isStrictModeEnabled() || !configManager.isFullscreenEnabled()) {
+            if (!configManager.isFullscreenEnabled()) {
                 return@setOnSystemUiVisibilityChangeListener
             }
 
             if (visibility and View.SYSTEM_UI_FLAG_FULLSCREEN == 0) {
-                decorView.systemUiVisibility = (
-                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-                                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                                View.SYSTEM_UI_FLAG_IMMERSIVE
-                        )
+                var flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                        View.SYSTEM_UI_FLAG_FULLSCREEN
+
+                // В strict режиме сохраняем прежнюю семантику (IMMERSIVE),
+                // в обычном — IMMERSIVE_STICKY.
+                flags = if (configManager.isStrictModeEnabled()) {
+                    flags or View.SYSTEM_UI_FLAG_IMMERSIVE
+                } else {
+                    flags or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                }
+
+                decorView.systemUiVisibility = flags
             }
         }
     }
@@ -529,6 +543,56 @@ abstract class BaseActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateSafeModeBadge()
+    }
+
+    /** Повторно скрывает системные бары при жесте «Назад». */
+    private fun rehideSystemBarsAfterBackGesture() {
+        if (!configManager.isFullscreenEnabled()) return
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val controller = window?.insetsController ?: return
+                controller.hide(
+                    WindowInsetsCompat.Type.statusBars() or
+                            WindowInsetsCompat.Type.navigationBars()
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                val decorView = window?.decorView ?: return
+                if (decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_FULLSCREEN != 0) {
+                    return
+                }
+                decorView.systemUiVisibility = (
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        )
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    /**
+     * Синхронизирует системные бары с текущими настройками fullscreen.
+     * На Android 11+ восстанавливает behavior/strict-слушатель, которые
+     * сбрасываются в default после закрытия transient-показа баров.
+     */
+    private fun reapplyImmersiveState() {
+        if (configManager.isFullscreenEnabled()) {
+            enableImmersiveMode(configManager.isStrictModeEnabled())
+        } else {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    window?.let { removeStrictModeListenerModern(it) }
+                } else {
+                    window?.decorView?.let { removeStrictModeListenerLegacy(it) }
+                }
+            } catch (_: Exception) {
+            }
+        }
     }
 
     /** Заново применяет immersive при получении фокуса. */

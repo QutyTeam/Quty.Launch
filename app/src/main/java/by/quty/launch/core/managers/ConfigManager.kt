@@ -337,6 +337,9 @@ class ConfigManager(context: Context) {
             LoggerTagModel.CONFIG,
             "CONFIG.language  $previous > $normalized"
         )
+
+        // Локализованные имена виртуальных приложений в кэше нужно пересобрать.
+        CacheManager.invalidateCache()
     }
 
     /** Возвращает код языка (ru/en). */

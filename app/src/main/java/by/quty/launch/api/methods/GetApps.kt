@@ -3,6 +3,7 @@ package by.quty.launch.api.methods
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.util.Base64
@@ -13,6 +14,7 @@ import by.quty.launch.api.base.BaseApiMethod
 import by.quty.launch.api.base.ApiResponse
 import by.quty.launch.api.model.AppInfo
 import by.quty.launch.configs.ApiConfig
+import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.CacheManager
 import by.quty.launch.core.managers.SystemUpdateManager
 import by.quty.launch.core.utilities.BadgeHelper
@@ -20,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.ByteArrayOutputStream
+import java.util.Locale
 
 /**
  * Список приложений (установленные + виртуальные) с иконками Base64.
@@ -93,6 +96,10 @@ class GetApps(
     private suspend fun loadFreshApps(): List<AppInfo> = withContext(Dispatchers.IO) {
         val packageManager = context.packageManager
 
+        // Application-контекст не локализуется в attachBaseContext, поэтому для
+        // имён виртуальных приложений строим контекст с сохранённым языком.
+        val localizedContext = localizedContext()
+
         val realApps = packageManager
             .getInstalledApplications(0)
             .filter { packageManager.getLaunchIntentForPackage(it.packageName) != null }
@@ -122,7 +129,7 @@ class GetApps(
 
         customApps.add(
             AppInfo(
-                name = context.getString(R.string.api_getapps_settings_name),
+                name = localizedContext.getString(R.string.api_getapps_settings_name),
                 packageName = ApiConfig.SETTINGS_PACKAGE,
                 isCustom = true,
                 iconBase64 = settingsIconBase64
@@ -134,7 +141,7 @@ class GetApps(
 
         customApps.add(
             AppInfo(
-                name = context.getString(R.string.api_getapps_store_name),
+                name = localizedContext.getString(R.string.api_getapps_store_name),
                 packageName = ApiConfig.STORE_PACKAGE,
                 isCustom = true,
                 iconBase64 = storeIconBase64
@@ -147,7 +154,7 @@ class GetApps(
 
             customApps.add(
                 AppInfo(
-                    name = context.getString(R.string.api_getapps_terminal_name),
+                    name = localizedContext.getString(R.string.api_getapps_terminal_name),
                     packageName = ApiConfig.TERMINAL_PACKAGE,
                     isCustom = true,
                     iconBase64 = terminalIconBase64
@@ -161,7 +168,7 @@ class GetApps(
 
             customApps.add(
                 AppInfo(
-                    name = context.getString(R.string.api_getapps_logger_name),
+                    name = localizedContext.getString(R.string.api_getapps_logger_name),
                     packageName = ApiConfig.LOGGER_PACKAGE,
                     isCustom = true,
                     iconBase64 = loggerIconBase64
@@ -170,6 +177,23 @@ class GetApps(
         }
 
         customApps + realApps
+    }
+
+    /** Контекст с сохранённым в настройках языком приложения. */
+    private fun localizedContext(): Context {
+        val language = context
+            .getSharedPreferences(PREFS_LAUNCHER, Context.MODE_PRIVATE)
+            .getString(KEY_APP_LANGUAGE, CoreConfig.DEFAULT_LANGUAGE)
+            ?: CoreConfig.DEFAULT_LANGUAGE
+
+        val locale = when (language) {
+            CoreConfig.LANGUAGE_RU -> Locale.forLanguageTag(CoreConfig.LOCALE_TAG_RU)
+            else -> Locale.forLanguageTag(CoreConfig.LOCALE_TAG_EN)
+        }
+
+        val config = Configuration(context.resources.configuration)
+        config.setLocale(locale)
+        return context.createConfigurationContext(config)
     }
 
     /** Конвертирует Drawable в Base64 PNG (NO_WRAP). */
@@ -195,5 +219,8 @@ class GetApps(
         private const val KEY_DEVELOPER_MODE = ApiConfig.PREFS_DEVELOPER_MODE
         private const val KEY_SHOW_TERMINAL = ApiConfig.PREFS_SHOW_TERMINAL_IN_APPS
         private const val KEY_SHOW_LOGGER = ApiConfig.PREFS_SHOW_LOGGER_IN_APPS
+
+        private const val PREFS_LAUNCHER = ApiConfig.PREFS_LAUNCHER_NAME
+        private const val KEY_APP_LANGUAGE = ApiConfig.PREFS_APP_LANGUAGE
     }
 }
