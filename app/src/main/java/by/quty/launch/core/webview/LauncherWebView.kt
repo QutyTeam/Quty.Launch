@@ -12,6 +12,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
+import by.quty.launch.BuildConfig
 import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.LoggerManager
@@ -50,15 +51,19 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
 
-        settings.allowFileAccess = true
-        settings.allowFileAccessFromFileURLs = true
-        settings.allowUniversalAccessFromFileURLs = true
+        // Оболочки грузятся через WebViewAssetLoader и quty://, прямой file://-доступ
+        // не нужен и открывал бы чтение приватных файлов приложения из JS.
+        settings.allowFileAccess = false
+        settings.allowContentAccess = false
+        settings.allowFileAccessFromFileURLs = false
+        settings.allowUniversalAccessFromFileURLs = false
 
         settings.cacheMode = WebSettings.LOAD_DEFAULT
 
         setLayerType(LAYER_TYPE_HARDWARE, null)
 
-        setWebContentsDebuggingEnabled(true)
+        // Отладка по chrome://inspect даёт полный доступ к JS-мосту, только для debug.
+        setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
 
         setupAssetLoader()
         setupWebChromeClient()
@@ -127,6 +132,14 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
                     }
 
                     if (file.exists() && file.isFile) {
+                        if (!isInsideShellDir(file, shellDir)) {
+                            LoggerManager.warn(
+                                LoggerTagModel.WEBVIEW,
+                                "WEBVIEW.quty  path escape blocked  $path"
+                            )
+                            return null
+                        }
+
                         val mimeType = URLConnection.guessContentTypeFromName(file.name)
                             ?: "text/plain"
                         return WebResourceResponse(mimeType, "UTF-8", FileInputStream(file))
@@ -155,6 +168,19 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
                         e
                     )
                     return null
+                }
+            }
+
+            /** true, если canonical-путь файла лежит внутри папки оболочки (защита от `..`). */
+            private fun isInsideShellDir(file: File, shellDir: File): Boolean {
+                return try {
+                    val canonicalShell = shellDir.canonicalFile
+                    val canonicalFile = file.canonicalFile
+
+                    canonicalFile.path == canonicalShell.path ||
+                            canonicalFile.path.startsWith(canonicalShell.path + File.separator)
+                } catch (_: Exception) {
+                    false
                 }
             }
 
@@ -203,10 +229,16 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
 
                 if (url.startsWith("https://appassets.androidplatform.net/")) return false
 
-                if (url.startsWith("data:") ||
-                    url.startsWith("about:") ||
-                    url.startsWith("file:")
-                ) return false
+                // Прямой доступ к файлам и контенту приложения запрещён — только quty:// и assets.
+                if (url.startsWith("file:") || url.startsWith("content:")) {
+                    LoggerManager.warn(
+                        LoggerTagModel.WEBVIEW,
+                        "WEBVIEW.blocked  $url"
+                    )
+                    return true
+                }
+
+                if (url.startsWith("data:") || url.startsWith("about:")) return false
 
                 try {
                     LoggerManager.debug(

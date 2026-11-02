@@ -145,6 +145,23 @@ class ShellManager(
     companion object {
         const val SHELL_EXTENSION_WITH_DOT = CoreConfig.SHELL_EXTENSION_WITH_DOT
         val SHELL_EXTENSIONS = CoreConfig.SHELL_EXTENSIONS
+
+        /** Максимальная длина имени оболочки. */
+        private const val MAX_SHELL_NAME_LENGTH = 64
+
+        /** Допустимые символы имени оболочки: буквы, цифры, `_`, `-`, `.`. */
+        private val SHELL_NAME_REGEX = Regex("^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
+
+        /**
+         * true, если имя оболочки безопасно использовать как имя файла и папки.
+         * Отсекает `..`, разделители путей и служебные символы — иначе манифест
+         * из архива может писать и удалять файлы за пределами SHELLS.
+         */
+        fun isValidShellName(name: String): Boolean {
+            if (name.isEmpty() || name.length > MAX_SHELL_NAME_LENGTH) return false
+            if (name.contains("..")) return false
+            return SHELL_NAME_REGEX.matches(name)
+        }
     }
 
     private val storageManager = StorageManager(context)
@@ -499,6 +516,14 @@ class ShellManager(
         clearActiveDir()
 
         if (!shell.isAsset) {
+            if (!isValidShellName(shell.name)) {
+                LoggerManager.error(
+                    LoggerTagModel.SHELL,
+                    "SHELL.activate  invalid name  ${shell.name}"
+                )
+                return@withContext
+            }
+
             val extractDir = File(activeShellDir, shell.name)
             if (!extractDir.exists()) extractDir.mkdirs()
             unzipShell(shell.sourcePath, extractDir)
@@ -540,6 +565,8 @@ class ShellManager(
 
             withContext(Dispatchers.IO) {
                 ZipFile(zipFile).use { zip ->
+                    var extractedBytes = 0L
+
                     zip.entries().asSequence().forEach { entry ->
                         val outFile = File(canonicalOutput, entry.name).canonicalFile
 
@@ -557,6 +584,16 @@ class ShellManager(
                         if (entry.isDirectory) {
                             outFile.mkdirs()
                         } else {
+                            extractedBytes += entry.size
+
+                            if (extractedBytes > CoreConfig.MAX_SHELL_UNPACKED_SIZE_BYTES) {
+                                LoggerManager.warn(
+                                    LoggerTagModel.SHELL,
+                                    "SHELL.unzip_abort  unpacked size limit  ${zipFile.nameWithoutExtension}"
+                                )
+                                throw ShellUnpackLimitException()
+                            }
+
                             outFile.parentFile?.mkdirs()
                             zip.getInputStream(entry).use { input ->
                                 FileOutputStream(outFile).use { output ->
@@ -567,6 +604,16 @@ class ShellManager(
                     }
                 }
             }
+        } catch (_: ShellUnpackLimitException) {
+            // Частично распакованное — мусор: удаляем, оболочка не должна грузиться.
+            try {
+                outputDir.deleteRecursively()
+            } catch (_: Exception) {
+            }
+            LoggerManager.error(
+                LoggerTagModel.SHELL,
+                "SHELL.unzip_failed  ${zipFile.nameWithoutExtension}  unpacked size limit"
+            )
         } catch (e: Exception) {
             LoggerManager.error(
                 LoggerTagModel.SHELL,
@@ -575,6 +622,9 @@ class ShellManager(
             )
         }
     }
+
+    /** Сигнал превышения лимита распакованного размера (защита от zip bomb). */
+    private class ShellUnpackLimitException : Exception()
 
     // ============================================================
     // ПРИНУДИТЕЛЬНАЯ ОРИЕНТАЦИЯ
@@ -601,6 +651,14 @@ class ShellManager(
 
     /** Удаляет кастомную оболочку по имени. */
     suspend fun deleteShellByName(name: String): Boolean {
+        if (!isValidShellName(name)) {
+            LoggerManager.warn(
+                LoggerTagModel.SHELL,
+                "SHELL.delete_skip  $name  invalid name"
+            )
+            return false
+        }
+
         return try {
             val fileName = "$name${SHELL_EXTENSION_WITH_DOT}"
             val file = storageManager.get(StorageDirectory.SHELLS, fileName)
@@ -714,7 +772,11 @@ class ShellManager(
                 return@withContext ShellPreviewResult.Failure.ManifestInvalid
             }
 
-            if (manifest.name.isBlank()) {
+            if (!isValidShellName(manifest.name)) {
+                LoggerManager.warn(
+                    LoggerTagModel.SHELL,
+                    "SHELL.preview  invalid name  ${manifest.name}"
+                )
                 return@withContext ShellPreviewResult.Failure.ManifestInvalid
             }
 
@@ -820,7 +882,11 @@ class ShellManager(
                     return@withContext ShellImportResult.Failure.ManifestInvalid
                 }
 
-                if (manifest.name.isBlank()) {
+                if (!isValidShellName(manifest.name)) {
+                    LoggerManager.warn(
+                        LoggerTagModel.SHELL,
+                        "SHELL.import  invalid name  ${manifest.name}"
+                    )
                     return@withContext ShellImportResult.Failure.ManifestInvalid
                 }
 

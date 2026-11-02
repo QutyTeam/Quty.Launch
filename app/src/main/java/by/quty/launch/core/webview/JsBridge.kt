@@ -85,12 +85,16 @@ class JsBridge(
     private fun sendResultToJs(callbackId: String, result: String, error: Throwable?) {
         val webView = webViewRef?.get() ?: return
 
+        // callbackId приходит из JS: экранируем его как строковый литерал,
+        // иначе кавычка в id ломает выражение и позволяет внедрить свой код.
+        val safeCallbackId = JSONObject.quote(callbackId)
+
         val jsCode = if (error == null) {
             val safeResult = JSONObject.quote(result)
-            "window._callbacks && window._callbacks['$callbackId'] && window._callbacks['$callbackId']($safeResult);"
+            "window._callbacks && window._callbacks[$safeCallbackId] && window._callbacks[$safeCallbackId]($safeResult);"
         } else {
             val safeError = JSONObject.quote(error.message ?: "Unknown error")
-            "window._callbacks && window._callbacks['$callbackId'] && window._callbacks['$callbackId'](null, $safeError);"
+            "window._callbacks && window._callbacks[$safeCallbackId] && window._callbacks[$safeCallbackId](null, $safeError);"
         }
 
         webView.post {

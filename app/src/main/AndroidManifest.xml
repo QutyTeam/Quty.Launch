@@ -80,7 +80,7 @@
         <!-- Экран приветствия (онбординг) -->
         <activity
             android:name=".WelcomeActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@style/Theme.QutyLaunch"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
         </activity>

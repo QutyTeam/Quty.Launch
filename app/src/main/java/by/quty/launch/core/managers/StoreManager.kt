@@ -163,6 +163,18 @@ class StoreManager(private val context: Context) {
             return@withContext false
         }
 
+        // Имя из каталога сервера идёт в путь файла — не даём выйти за пределы SHELLS.
+        if (!ShellManager.isValidShellName(item.name)) {
+            LoggerManager.warn(
+                LoggerTagModel.STORE,
+                "STORE.install  error  invalid name  ${item.name}"
+            )
+            withContext(Dispatchers.Main) {
+                listener.onError(context.getString(R.string.store_install_error))
+            }
+            return@withContext false
+        }
+
         try {
             val fileName = "${item.name}${CoreConfig.SHELL_EXTENSION_WITH_DOT}"
 

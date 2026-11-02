@@ -7,12 +7,16 @@
 # ХЕЛПЕРЫ ДЛЯ ВЫВОДА
 # ============================================
 
+# Счётчик этапов — нумерация остаётся сквозной при пропуске шагов
+$script:StageNumber = 0
+
 # Заголовок этапа — Cyan, крупная рамка
 function Write-StageHeader {
-    param([string]$Number, [string]$Title)
+    param([string]$Title)
+    $script:StageNumber++
     Write-Host ""
     Write-Host "==========================================" -ForegroundColor Cyan
-    Write-Host "  ЭТАП $Number. $Title" -ForegroundColor Cyan
+    Write-Host "  ЭТАП $script:StageNumber. $Title" -ForegroundColor Cyan
     Write-Host "==========================================" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -94,9 +98,9 @@ Write-Host "##########################################" -ForegroundColor Magenta
 Write-Host ""
 
 # ============================================
-# ЭТАП 1: ЧТЕНИЕ ТЕКУЩЕЙ ВЕРСИИ
+# ЭТАП: ЧТЕНИЕ ТЕКУЩЕЙ ВЕРСИИ
 # ============================================
-Write-StageHeader -Number "1" -Title "ЧТЕНИЕ ТЕКУЩЕЙ ВЕРСИИ"
+Write-StageHeader -Title "ЧТЕНИЕ ТЕКУЩЕЙ ВЕРСИИ"
 
 # Проверяем существование файла
 if (-not (Test-Path "app/build.gradle.kts")) {
@@ -132,9 +136,34 @@ Write-Success "Текущая версия: $currentVersionName $currentVersionS
 Write-Info "Version code: $currentVersionCode"
 
 # ============================================
-# ЭТАП 2: НАСТРОЙКИ РЕЛИЗА
+# ЭТАП: НАСТРОЙКИ РЕЛИЗА
 # ============================================
-Write-StageHeader -Number "2" -Title "НАСТРОЙКИ РЕЛИЗА"
+Write-StageHeader -Title "НАСТРОЙКИ СБОРКИ"
+
+# --- Вопрос 0: Тип сборки ---
+Write-Question "Какую сборку делаем?"
+Write-Info "  1) release — подписанный APK + публикация на сервер"
+Write-Info "  2) debug   — локальная сборка для теста, без публикации"
+Write-Host ""
+
+$buildChoice = $null
+while ($buildChoice -notin @("1", "2")) {
+    $answer = Read-Answer -Prompt "Выберите (1/2) [1]:"
+    if ([string]::IsNullOrEmpty($answer)) { $answer = "1" }
+    $buildChoice = $answer
+}
+
+$isReleaseBuild = ($buildChoice -eq "1")
+
+if ($isReleaseBuild) {
+    Write-Success "Режим: RELEASE (с публикацией)"
+} else {
+    Write-Success "Режим: DEBUG (локальная сборка)"
+}
+
+Write-Divider
+
+if ($isReleaseBuild) {
 
 # --- Вопрос 1: Новая версия ---
 Write-Question "Введите новый номер версии (сейчас $currentVersionName):"
@@ -199,45 +228,68 @@ if ($createTag) {
 # Подсчёт нового versionCode
 $newVersionCode = $currentVersionCode + 1
 
-# ============================================
-# ЭТАП 3: ОБНОВЛЕНИЕ BUILD.GRADLE.KTS
-# ============================================
-Write-StageHeader -Number "3" -Title "ОБНОВЛЕНИЕ BUILD.GRADLE.KTS"
+} else {
+    # DEBUG: версия не меняется, публикация не выполняется
+    $newVersionName = $currentVersionName
+    $newVersionCode = $currentVersionCode
+    $changelog = ""
+    $isCritical = $false
+    $createTag = $false
 
-Write-Step "versionCode: $currentVersionCode → $newVersionCode"
-Write-Step "versionName: $currentVersionName → $newVersionName"
+    Write-Info "Версия остаётся без изменений: $currentVersionName ($currentVersionCode)"
+}
 
-$newContent = @()
-foreach ($line in ($gradleFile -split "`n")) {
-    if ($line -match 'versionCode\s*=') {
-        $newContent += "    versionCode = $newVersionCode"
-    } elseif ($line -match 'versionName\s*=' -and $line -notmatch 'versionNameSuffix') {
-        $newContent += "    versionName = `"$newVersionName`""
-    } else {
-        $newContent += $line
+# ============================================
+# ЭТАП: ОБНОВЛЕНИЕ BUILD.GRADLE.KTS
+# ============================================
+if ($isReleaseBuild) {
+    Write-StageHeader -Title "ОБНОВЛЕНИЕ BUILD.GRADLE.KTS"
+
+    Write-Step "versionCode: $currentVersionCode → $newVersionCode"
+    Write-Step "versionName: $currentVersionName → $newVersionName"
+
+    $newContent = @()
+    foreach ($line in ($gradleFile -split "`n")) {
+        if ($line -match 'versionCode\s*=') {
+            $newContent += "    versionCode = $newVersionCode"
+        } elseif ($line -match 'versionName\s*=' -and $line -notmatch 'versionNameSuffix') {
+            $newContent += "    versionName = `"$newVersionName`""
+        } else {
+            $newContent += $line
+        }
+    }
+
+    try {
+        $contentToWrite = $newContent -join "`n"
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        $bytes = $utf8NoBom.GetBytes($contentToWrite)
+        [System.IO.File]::WriteAllBytes("app/build.gradle.kts", $bytes)
+        Write-Success "build.gradle.kts обновлен"
+    } catch {
+        Write-Err "Не удалось сохранить build.gradle.kts: $($_.Exception.Message)"
+        Write-Host ""
+        Write-Host "  Нажмите Enter для выхода..." -ForegroundColor White
+        Read-Host
+        exit 1
     }
 }
 
-try {
-    $contentToWrite = $newContent -join "`n"
-    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-    $bytes = $utf8NoBom.GetBytes($contentToWrite)
-    [System.IO.File]::WriteAllBytes("app/build.gradle.kts", $bytes)
-    Write-Success "build.gradle.kts обновлен"
-} catch {
-    Write-Err "Не удалось сохранить build.gradle.kts: $($_.Exception.Message)"
-    Write-Host ""
-    Write-Host "  Нажмите Enter для выхода..." -ForegroundColor White
-    Read-Host
-    exit 1
+# ============================================
+# ЭТАП: СБОРКА
+# ============================================
+if ($isReleaseBuild) {
+    $gradleTask = "assembleRelease"
+    $buildTitle = "СБОРКА RELEASE"
+    $apkSourceDir = "app\build\outputs\apk\release"
+} else {
+    $gradleTask = "assembleDebug"
+    $buildTitle = "СБОРКА DEBUG"
+    $apkSourceDir = "app\build\outputs\apk\debug"
 }
 
-# ============================================
-# ЭТАП 4: СБОРКА RELEASE
-# ============================================
-Write-StageHeader -Number "4" -Title "СБОРКА RELEASE"
+Write-StageHeader -Title $buildTitle
 
-Write-Step "Запуск: gradlew clean assembleRelease"
+Write-Step "Запуск: gradlew clean $gradleTask"
 Write-Info "Это может занять несколько минут..."
 Write-Host ""
 
@@ -251,9 +303,9 @@ if (-not (Test-Path "gradlew.bat") -and -not (Test-Path "gradlew")) {
 }
 
 if (Test-Path "gradlew.bat") {
-    .\gradlew.bat clean assembleRelease
+    .\gradlew.bat clean $gradleTask
 } else {
-    ./gradlew clean assembleRelease
+    ./gradlew clean $gradleTask
 }
 
 if ($LASTEXITCODE -ne 0) {
@@ -267,12 +319,16 @@ Write-Host ""
 Write-Success "Сборка успешно завершена!"
 
 # ============================================
-# ЭТАП 5: КОПИРОВАНИЕ APK
+# ЭТАП: КОПИРОВАНИЕ APK
 # ============================================
-Write-StageHeader -Number "5" -Title "КОПИРОВАНИЕ APK"
+$debugApkPath = $null
+
+if ($isReleaseBuild) {
+
+Write-StageHeader -Title "КОПИРОВАНИЕ APK"
 
 $apkFilename = "Quty.Launch-$newVersionName.apk"
-$sourceApk = "app\build\outputs\apk\release\app-release.apk"
+$sourceApk = Join-Path $apkSourceDir "app-release.apk"
 $destDir = "..\Quty.Launch.Server\updates\apk\"
 $destApk = Join-Path $destDir $apkFilename
 
@@ -320,9 +376,9 @@ $apkSizeHuman = if ($apkSize -gt 1MB) {
 Write-Info "Размер APK: $apkSizeHuman"
 
 # ============================================
-# ЭТАП 6: СОЗДАНИЕ VERSION.JSON
+# ЭТАП: СОЗДАНИЕ VERSION.JSON
 # ============================================
-Write-StageHeader -Number "6" -Title "СОЗДАНИЕ VERSION.JSON"
+Write-StageHeader -Title "СОЗДАНИЕ VERSION.JSON"
 
 $versionJson = "..\Quty.Launch.Server\updates\version.json"
 $jsonChangelog = $changelog -replace "`n", "\n"
@@ -358,9 +414,9 @@ try {
 }
 
 # ============================================
-# ЭТАП 7: GIT PUSH
+# ЭТАП: GIT PUSH
 # ============================================
-Write-StageHeader -Number "7" -Title "GIT PUSH"
+Write-StageHeader -Title "GIT PUSH"
 
 $skipGit = $false
 
@@ -401,10 +457,10 @@ if (-not (Test-Path "..\Quty.Launch.Server\.git")) {
 }
 
 # ============================================
-# ЭТАП 8: GIT TAG (если выбрано)
+# ЭТАП: GIT TAG (если выбрано)
 # ============================================
 if ($createTag -and -not $skipGit) {
-    Write-StageHeader -Number "8" -Title "GIT TAG"
+    Write-StageHeader -Title "GIT TAG"
 
     Push-Location "..\Quty.Launch.Server" -ErrorAction SilentlyContinue
 
@@ -431,6 +487,35 @@ if ($createTag -and -not $skipGit) {
     }
 }
 
+} else {
+
+# ============================================
+# DEBUG: ЛОКАЛЬНЫЙ APK БЕЗ ПУБЛИКАЦИИ
+# ============================================
+Write-StageHeader -Title "РЕЗУЛЬТАТ DEBUG-СБОРКИ"
+
+$debugApkPath = Join-Path $apkSourceDir "app-debug.apk"
+
+if (Test-Path $debugApkPath) {
+    $apkSize = (Get-Item $debugApkPath).Length
+    $apkSizeHuman = if ($apkSize -gt 1MB) {
+        "{0:N2} MB" -f ($apkSize / 1MB)
+    } elseif ($apkSize -gt 1KB) {
+        "{0:N0} KB" -f ($apkSize / 1KB)
+    } else {
+        "{0} B" -f $apkSize
+    }
+
+    Write-Success "APK готов: $debugApkPath"
+    Write-Info "Размер: $apkSizeHuman"
+    Write-Info "Версия не менялась, на сервер ничего не отправлено"
+} else {
+    Write-Err "APK не найден: $debugApkPath"
+    $apkSizeHuman = "—"
+}
+
+} # конец debug-ветки
+
 # ============================================
 # ИТОГ
 # ============================================
@@ -441,24 +526,36 @@ Write-Host "#     ✅ ПРОЦЕСС ЗАВЕРШЕН УСПЕШНО!       #" -
 Write-Host "#                                        #" -ForegroundColor Green
 Write-Host "##########################################" -ForegroundColor Green
 Write-Host ""
+Write-Host "  🏗️  Режим:        " -NoNewline -ForegroundColor Gray
+Write-Host $(if ($isReleaseBuild) { "RELEASE" } else { "DEBUG" }) -ForegroundColor White
 Write-Host "  📦 Версия:       " -NoNewline -ForegroundColor Gray
 Write-Host "$newVersionName $currentVersionSuffix" -ForegroundColor White
 Write-Host "  🔢 Version code: " -NoNewline -ForegroundColor Gray
 Write-Host "$newVersionCode" -ForegroundColor White
-Write-Host "  🧲 Version code: " -NoNewline -ForegroundColor Gray
+Write-Host "  🧲 Размер:       " -NoNewline -ForegroundColor Gray
 Write-Host "$apkSizeHuman" -ForegroundColor White
-Write-Host "  🚩  Critical:    " -NoNewline -ForegroundColor Gray
-Write-Host "$isCritical" -ForegroundColor White
-Write-Host "  🏷️  Git tag:     " -NoNewline -ForegroundColor Gray
-Write-Host "$createTag" -ForegroundColor White
-Write-Host ""
-Write-Host "  📄 Changelog:" -ForegroundColor Gray
-Write-Host "$changelog" -ForegroundColor White
-Write-Host ""
-Write-Host "  📁 APK:  " -NoNewline -ForegroundColor Gray
-Write-Host "$destApk" -ForegroundColor White
-Write-Host "  🧩 JSON: " -NoNewline -ForegroundColor Gray
-Write-Host "$versionJson" -ForegroundColor White
+
+if ($isReleaseBuild) {
+    Write-Host "  🚩  Critical:    " -NoNewline -ForegroundColor Gray
+    Write-Host "$isCritical" -ForegroundColor White
+    Write-Host "  🏷️  Git tag:     " -NoNewline -ForegroundColor Gray
+    Write-Host "$createTag" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  📄 Changelog:" -ForegroundColor Gray
+    Write-Host "$changelog" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  📁 APK:  " -NoNewline -ForegroundColor Gray
+    Write-Host "$destApk" -ForegroundColor White
+    Write-Host "  🧩 JSON: " -NoNewline -ForegroundColor Gray
+    Write-Host "$versionJson" -ForegroundColor White
+} else {
+    Write-Host ""
+    Write-Host "  📁 APK:  " -NoNewline -ForegroundColor Gray
+    Write-Host $debugApkPath -ForegroundColor White
+    Write-Host ""
+    Write-Info "Debug-сборка не публикуется и не меняет версию проекта"
+}
+
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Green
 
