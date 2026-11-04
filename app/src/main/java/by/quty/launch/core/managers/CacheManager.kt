@@ -93,7 +93,7 @@ object CacheManager {
                 addDataScheme("package")
             }
 
-            androidx.core.content.ContextCompat.registerReceiver(
+            ContextCompat.registerReceiver(
                 context.applicationContext,
                 packageReceiver,
                 filter,

@@ -59,11 +59,6 @@ object ApiPermissionManager {
         )
     }
 
-    /** true, если для оболочки есть хотя бы одно сохранённое решение. */
-    fun hasDecisions(shellName: String): Boolean {
-        return getMethodNames(shellName).isNotEmpty()
-    }
-
     /** Методы, по которым для оболочки уже есть решение (любое). */
     fun getMethodNames(shellName: String): Set<String> {
         val allKeys = prefs?.all?.keys ?: return emptySet()

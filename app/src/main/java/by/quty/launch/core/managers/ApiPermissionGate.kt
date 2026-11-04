@@ -28,9 +28,6 @@ object ApiPermissionGate {
         requester = value
     }
 
-    /** true, если UI готов показать диалог. */
-    fun isAvailable(): Boolean = requester != null
-
     /**
      * Проверяет доступ оболочки к методу.
      * Заявленные в манифесте методы проходят без вопросов.

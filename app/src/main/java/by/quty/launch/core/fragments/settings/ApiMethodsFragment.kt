@@ -164,7 +164,8 @@ class ApiMethodsFragment : Fragment() {
                     method = method,
                     isDeclared = method.name in declaredNames,
                     isCalled = method.name in activeNames,
-                    isDenied = decisions[method.name] == false
+                    isDenied = decisions[method.name] == false,
+                    shellName = activeShell?.name
                 )
                 activeContainer.addView(row)
 
@@ -188,7 +189,8 @@ class ApiMethodsFragment : Fragment() {
                     method = method,
                     isDeclared = false,
                     isCalled = false,
-                    isDenied = false
+                    isDenied = false,
+                    shellName = null
                 )
                 otherContainer.addView(row)
 
@@ -211,7 +213,8 @@ class ApiMethodsFragment : Fragment() {
         method: BaseApiMethod<*>,
         isDeclared: Boolean,
         isCalled: Boolean,
-        isDenied: Boolean
+        isDenied: Boolean,
+        shellName: String?
     ): View {
         val view = layoutInflater.inflate(
             R.layout.item_api_method,
@@ -263,6 +266,15 @@ class ApiMethodsFragment : Fragment() {
             }
             else -> {
                 check.visibility = View.GONE
+            }
+        }
+
+        // Запрещённую строку можно тапнуть, чтобы заново спросить разрешение.
+        if (isDenied && shellName != null) {
+            view.isClickable = true
+            view.isFocusable = true
+            view.setOnClickListener {
+                showRegrantDialog(shellName, method)
             }
         }
 
@@ -362,6 +374,54 @@ class ApiMethodsFragment : Fragment() {
                     R.string.api_methods_reset_done,
                     Toast.LENGTH_SHORT
                 ).show()
+                (activity as? SettingsActivity)?.markRestartRequired()
+                dialog.dismiss()
+                rebuild()
+            }
+
+        dialog.show()
+    }
+
+    // ============================================================
+    // СМЕНА РЕШЕНИЯ ПО ОТДЕЛЬНОМУ ЗАПРЕЩЁННОМУ МЕТОДУ
+    // ============================================================
+
+    /**
+     * Повторно спрашивает разрешение для запрещённого метода (тот же диалог,
+     * что и в MainActivity). Решение применяется сразу, без перезапуска.
+     */
+    private fun showRegrantDialog(shellName: String, method: BaseApiMethod<*>) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_api_permission, null)
+
+        val dialog = AlertDialog.Builder(
+            requireContext(),
+            R.style.Theme_QutyLaunch_AlertDialog_Transparent
+        )
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+
+        dialogView.findViewById<TextView>(R.id.api_permission_message).text =
+            getString(R.string.api_methods_regrant_message, shellName, method.name)
+
+        dialogView.findViewById<TextView>(R.id.api_permission_method_name).text = method.name
+
+        dialogView.findViewById<TextView>(R.id.api_permission_method_description)
+            .setText(method.descriptionRes)
+
+        dialogView.findViewById<android.widget.Button>(R.id.api_permission_deny_button)
+            .setOnClickListener {
+                ApiPermissionManager.setDecision(shellName, method.name, false)
+                dialog.dismiss()
+                rebuild()
+            }
+
+        dialogView.findViewById<android.widget.Button>(R.id.api_permission_allow_button)
+            .setOnClickListener {
+                ApiPermissionManager.setDecision(shellName, method.name, true)
+                (activity as? SettingsActivity)?.markRestartRequired()
                 dialog.dismiss()
                 rebuild()
             }

@@ -337,6 +337,8 @@
     <string name="api_permission_deny">Запретить</string>
     <string name="api_permission_denied_error">Доступ к методу %s запрещён</string>
     <string name="api_methods_denied_badge">Запрещён</string>
+    <string name="api_methods_regrant_message" formatted="false">Метод %2$s ранее запрещён для оболочки «%1$s». Разрешить доступ?</string>
+    <string name="api_methods_regrant_hint">Нажмите на запрещённый метод, чтобы изменить решение.</string>
     <string name="api_methods_reset_title">Сбросить разрешения</string>
     <string name="api_methods_reset_confirm">Сбросить</string>
     <string name="api_methods_reset_message">Все решения по незаявленным методам будут удалены, и приложение спросит заново. Продолжить?</string>

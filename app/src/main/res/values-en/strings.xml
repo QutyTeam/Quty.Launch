@@ -337,6 +337,8 @@
     <string name="api_permission_deny">Deny</string>
     <string name="api_permission_denied_error">Access to method %s is denied</string>
     <string name="api_methods_denied_badge">Denied</string>
+    <string name="api_methods_regrant_message" formatted="false">Method %2$s was previously denied for shell \"%1$s\". Allow access?</string>
+    <string name="api_methods_regrant_hint">Tap a denied method to change the decision.</string>
     <string name="api_methods_reset_title">Reset permissions</string>
     <string name="api_methods_reset_confirm">Reset</string>
     <string name="api_methods_reset_message">All decisions for undeclared methods will be removed and the app will ask again. Continue?</string>

@@ -545,56 +545,6 @@ abstract class BaseActivity : AppCompatActivity() {
         updateSafeModeBadge()
     }
 
-    /** Повторно скрывает системные бары при жесте «Назад». */
-    private fun rehideSystemBarsAfterBackGesture() {
-        if (!configManager.isFullscreenEnabled()) return
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val controller = window?.insetsController ?: return
-                controller.hide(
-                    WindowInsetsCompat.Type.statusBars() or
-                            WindowInsetsCompat.Type.navigationBars()
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                val decorView = window?.decorView ?: return
-                if (decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_FULLSCREEN != 0) {
-                    return
-                }
-                decorView.systemUiVisibility = (
-                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-                                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        )
-            }
-        } catch (_: Exception) {
-        }
-    }
-
-    /**
-     * Синхронизирует системные бары с текущими настройками fullscreen.
-     * На Android 11+ восстанавливает behavior/strict-слушатель, которые
-     * сбрасываются в default после закрытия transient-показа баров.
-     */
-    private fun reapplyImmersiveState() {
-        if (configManager.isFullscreenEnabled()) {
-            enableImmersiveMode(configManager.isStrictModeEnabled())
-        } else {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    window?.let { removeStrictModeListenerModern(it) }
-                } else {
-                    window?.decorView?.let { removeStrictModeListenerLegacy(it) }
-                }
-            } catch (_: Exception) {
-            }
-        }
-    }
-
     /** Заново применяет immersive при получении фокуса. */
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)

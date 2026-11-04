@@ -9,7 +9,6 @@ import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.adapters.SettingsMenuAdapter
 import by.quty.launch.core.fragments.store.StoreCatalogFragment
