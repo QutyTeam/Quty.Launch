@@ -9,7 +9,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.util.Locale
 
 import by.quty.launch.configs.CoreConfig
 
@@ -306,17 +305,6 @@ class StorageManager(private val context: Context) {
     /** true, если файл существует, это файл и он больше minSize. */
     fun isValidFile(file: File, minSize: Long = 0): Boolean {
         return file.exists() && file.isFile && file.length() > minSize
-    }
-
-    /** Форматирует размер в GB/MB/KB/B. */
-    fun formatSize(size: Long): String {
-        val locale = Locale.US
-        return when {
-            size >= 1024 * 1024 * 1024 -> String.format(locale, "%.2f GB", size / (1024.0 * 1024.0 * 1024.0))
-            size >= 1024 * 1024 -> String.format(locale, "%.2f MB", size / (1024.0 * 1024.0))
-            size >= 1024 -> String.format(locale, "%.2f KB", size / 1024.0)
-            else -> "$size B"
-        }
     }
 
     // ============================================================

@@ -17,8 +17,9 @@ import androidx.lifecycle.lifecycleScope
 import by.quty.launch.R
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.StorageManager
-import by.quty.launch.core.utilities.PopupMenuHelper
 import by.quty.launch.core.utilities.DialogBlurHelper
+import by.quty.launch.core.utilities.PopupMenuHelper
+import by.quty.launch.core.utilities.FormatterHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -114,19 +115,8 @@ class LoggerFilesFragment : Fragment() {
     /** Форматирует метаданные файла: "HH:mm · size". */
     private fun formatMeta(file: File): String {
         val time = timeFormat.format(Date(file.lastModified()))
-        val size = formatSize(file.length())
+        val size = FormatterHelper.formatSize(file.length())
         return "$time · $size"
-    }
-
-    /** Форматирует размер файла в B/KB/MB/GB. */
-    private fun formatSize(bytes: Long): String {
-        val locale = Locale.US
-        return when {
-            bytes >= 1024L * 1024 * 1024 -> String.format(locale, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-            bytes >= 1024L * 1024 -> String.format(locale, "%.2f MB", bytes / (1024.0 * 1024.0))
-            bytes >= 1024 -> String.format(locale, "%.2f KB", bytes / 1024.0)
-            else -> "$bytes B"
-        }
     }
 
     // ============================================================

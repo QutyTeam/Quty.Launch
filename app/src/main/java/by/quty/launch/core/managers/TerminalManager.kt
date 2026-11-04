@@ -19,6 +19,7 @@ import by.quty.launch.core.model.TerminalCommandModel
 import by.quty.launch.core.model.TerminalExecutionResult
 import by.quty.launch.core.model.TerminalSegmentModel
 import by.quty.launch.core.utilities.AppInfoHelper
+import by.quty.launch.core.utilities.FormatterHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -686,12 +687,12 @@ object TerminalManager {
         val total = cacheTotal + tempSize + updatesSize + shellsSize
 
         return buildString {
-            appendLine(pad("Cache:") + storageManager.formatSize(cacheTotal))
-            appendLine(pad("Temp:") + storageManager.formatSize(tempSize))
-            appendLine(pad("Updates:") + storageManager.formatSize(updatesSize))
-            appendLine(pad("Shells:") + storageManager.formatSize(shellsSize))
+            appendLine(pad("Cache:") + FormatterHelper.formatSize(cacheTotal))
+            appendLine(pad("Temp:") + FormatterHelper.formatSize(tempSize))
+            appendLine(pad("Updates:") + FormatterHelper.formatSize(updatesSize))
+            appendLine(pad("Shells:") + FormatterHelper.formatSize(shellsSize))
             appendLine(context.getString(R.string.terminal_storage_divider))
-            append(pad("Total:") + storageManager.formatSize(total))
+            append(pad("Total:") + FormatterHelper.formatSize(total))
         }
     }
 
@@ -985,7 +986,7 @@ object TerminalManager {
         } catch (_: Exception) {
             0L
         }
-        val freeFormatted = storageManager.formatSize(freeSpace)
+        val freeFormatted = FormatterHelper.formatSize(freeSpace)
         val (freeMark, freeText) = if (freeSpace >= DOCTOR_MIN_FREE_SPACE_BYTES) {
             okCount++
             ok to freeFormatted
@@ -1055,10 +1056,10 @@ object TerminalManager {
         val usedBytes = totalBytes - freeBytes
 
         return buildString {
-            appendLine(pad("Used:") + formatBytes(usedBytes))
-            appendLine(pad("Free:") + formatBytes(freeBytes))
-            appendLine(pad("Max:") + formatBytes(maxBytes))
-            append(pad("Total:") + formatBytes(totalBytes))
+            appendLine(pad("Used:") + FormatterHelper.formatSize(usedBytes))
+            appendLine(pad("Free:") + FormatterHelper.formatSize(freeBytes))
+            appendLine(pad("Max:") + FormatterHelper.formatSize(maxBytes))
+            append(pad("Total:") + FormatterHelper.formatSize(totalBytes))
         }
     }
 
@@ -1509,17 +1510,6 @@ object TerminalManager {
     /** Дополняет строку пробелами до ширины колонки. */
     private fun pad(text: String): String {
         return text.padEnd(STATUS_PAD_WIDTH, ' ')
-    }
-
-    /** Форматирует байты в B/KB/MB/GB. */
-    private fun formatBytes(bytes: Long): String {
-        val locale = java.util.Locale.US
-        return when {
-            bytes >= 1024L * 1024 * 1024 -> String.format(locale, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-            bytes >= 1024L * 1024 -> String.format(locale, "%.2f MB", bytes / (1024.0 * 1024.0))
-            bytes >= 1024 -> String.format(locale, "%.2f KB", bytes / 1024.0)
-            else -> "$bytes B"
-        }
     }
 
     // ============================================================

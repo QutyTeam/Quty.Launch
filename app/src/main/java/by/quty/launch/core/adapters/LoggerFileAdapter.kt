@@ -8,6 +8,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import by.quty.launch.R
+import by.quty.launch.core.utilities.FormatterHelper
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -62,19 +63,8 @@ class LoggerFileAdapter(
         private fun formatMeta(file: File): String {
             val timeFormatter = SimpleDateFormat("HH:mm", Locale.US)
             val time = timeFormatter.format(Date(file.lastModified()))
-            val size = formatSize(file.length())
+            val size = FormatterHelper.formatSize(file.length())
             return "$time · $size"
-        }
-
-        /** Форматирует размер файла в B/KB/MB/GB. */
-        private fun formatSize(bytes: Long): String {
-            val locale = Locale.US
-            return when {
-                bytes >= 1024L * 1024 * 1024 -> String.format(locale, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-                bytes >= 1024L * 1024 -> String.format(locale, "%.2f MB", bytes / (1024.0 * 1024.0))
-                bytes >= 1024 -> String.format(locale, "%.2f KB", bytes / 1024.0)
-                else -> "$bytes B"
-            }
         }
     }
 }

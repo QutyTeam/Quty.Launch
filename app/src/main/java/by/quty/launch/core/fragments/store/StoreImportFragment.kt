@@ -25,6 +25,7 @@ import by.quty.launch.core.managers.ShellImportResult
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.managers.ShellPreviewResult
 import by.quty.launch.core.utilities.DialogBlurHelper
+import by.quty.launch.core.utilities.FormatterHelper
 import kotlinx.coroutines.launch
 
 /**
@@ -193,7 +194,7 @@ class StoreImportFragment : Fragment() {
             ?: getString(R.string.unknown)
         authorValue.text = preview.author?.takeIf { it.isNotEmpty() }
             ?: getString(R.string.author_default)
-        sizeValue.text = formatSize(preview.sizeBytes)
+        sizeValue.text = FormatterHelper.formatSize(preview.sizeBytes)
 
         val orientationText = when (preview.orientation) {
             "portrait" -> getString(R.string.orientation_portrait)
@@ -407,16 +408,5 @@ class StoreImportFragment : Fragment() {
         val typedValue = android.util.TypedValue()
         requireContext().theme.resolveAttribute(attr, typedValue, true)
         return typedValue.data
-    }
-
-    /** Форматирует размер в B/KB/MB/GB. */
-    private fun formatSize(bytes: Long): String {
-        val locale = java.util.Locale.US
-        return when {
-            bytes >= 1024L * 1024 * 1024 -> String.format(locale, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-            bytes >= 1024L * 1024 -> String.format(locale, "%.2f MB", bytes / (1024.0 * 1024.0))
-            bytes >= 1024 -> String.format(locale, "%.2f KB", bytes / 1024.0)
-            else -> "$bytes B"
-        }
     }
 }

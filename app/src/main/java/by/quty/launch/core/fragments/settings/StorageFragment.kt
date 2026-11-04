@@ -31,6 +31,7 @@ import by.quty.launch.core.managers.StorageDirectory
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.utilities.DialogBlurHelper
+import by.quty.launch.core.utilities.FormatterHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -121,7 +122,7 @@ class StorageFragment : Fragment() {
             }
 
             val total = categories.sumOf { it.size }
-            totalValue.text = storageManager.formatSize(total)
+            totalValue.text = FormatterHelper.formatSize(total)
 
             rebuildBar()
             rebuildCategoryList()
@@ -330,7 +331,7 @@ class StorageFragment : Fragment() {
         )
 
         title.text = getString(category.titleRes)
-        size.text = storageManager.formatSize(category.size)
+        size.text = FormatterHelper.formatSize(category.size)
 
         view.alpha = if (category.size > 0) 1f else 0.5f
         view.tag = category.id
@@ -420,7 +421,7 @@ class StorageFragment : Fragment() {
             )
 
             title.text = getString(category.titleRes)
-            size.text = storageManager.formatSize(category.size)
+            size.text = FormatterHelper.formatSize(category.size)
 
             row.alpha = if (isEmpty) 0.5f else 1f
 
