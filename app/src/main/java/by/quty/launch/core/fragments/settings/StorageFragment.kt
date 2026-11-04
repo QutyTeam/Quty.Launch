@@ -30,6 +30,7 @@ import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.StorageDirectory
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.model.LoggerTagModel
+import by.quty.launch.core.utilities.DialogBlurHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -442,6 +443,7 @@ class StorageFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         closeButton.setOnClickListener {
             dialog.dismiss()

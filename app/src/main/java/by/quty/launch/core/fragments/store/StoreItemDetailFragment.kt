@@ -30,6 +30,7 @@ import by.quty.launch.core.managers.StoreManager
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.model.StoreItemModel
 import by.quty.launch.core.utilities.PopupMenuHelper
+import by.quty.launch.core.utilities.DialogBlurHelper
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 import java.io.File
@@ -636,6 +637,7 @@ class StoreItemDetailFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val titleView = dialogView.findViewById<TextView>(R.id.recovery_confirm_title)
         val messageView = dialogView.findViewById<TextView>(R.id.recovery_confirm_message)

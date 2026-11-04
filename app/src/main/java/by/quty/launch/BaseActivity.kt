@@ -6,8 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -37,6 +35,7 @@ import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.model.LoggerTagModel
+import by.quty.launch.core.utilities.DialogBlurHelper
 import java.util.Locale
 
 /**
@@ -241,7 +240,7 @@ abstract class BaseActivity : AppCompatActivity() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
-        dialog.setOnDismissListener { isSafeModeExitDialogShown = false }
+        DialogBlurHelper.apply(dialog, window) { isSafeModeExitDialogShown = false }
         isSafeModeExitDialogShown = true
 
         dialogView.findViewById<Button>(R.id.safe_mode_exit_cancel_button).setOnClickListener {
@@ -314,31 +313,16 @@ abstract class BaseActivity : AppCompatActivity() {
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val decorView = window?.decorView?.rootView
-            decorView?.let { view ->
-                val renderEffect = RenderEffect.createBlurEffect(20f, 20f, Shader.TileMode.CLAMP)
-                view.setRenderEffect(renderEffect)
-                dialog.setOnDismissListener {
-                    view.setRenderEffect(null)
-                }
-            }
-        }
+        DialogBlurHelper.apply(dialog, window)
 
         dialogView.findViewById<Button>(R.id.btn_restart).setOnClickListener {
             dialog.dismiss()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                window?.decorView?.rootView?.setRenderEffect(null)
-            }
             isRestarting = true
             restartApp()
         }
 
         dialogView.findViewById<Button>(R.id.btn_later).setOnClickListener {
             dialog.dismiss()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                window?.decorView?.rootView?.setRenderEffect(null)
-            }
             // needsRestart не сбрасываем — диалог появится при следующем закрытии.
         }
 

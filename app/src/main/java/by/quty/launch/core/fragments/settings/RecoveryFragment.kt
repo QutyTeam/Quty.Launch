@@ -19,6 +19,7 @@ import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.RecoveryManager
 import by.quty.launch.core.managers.StorageManager
+import by.quty.launch.core.utilities.DialogBlurHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -293,6 +294,7 @@ class RecoveryFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val titleView = dialogView.findViewById<android.widget.TextView>(R.id.recovery_confirm_title)
         val messageView = dialogView.findViewById<android.widget.TextView>(R.id.recovery_confirm_message)
@@ -340,6 +342,7 @@ class RecoveryFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val titleView = dialogView.findViewById<android.widget.TextView>(R.id.recovery_confirm_title)
         val messageView = dialogView.findViewById<android.widget.TextView>(R.id.recovery_confirm_message)
@@ -419,6 +422,7 @@ class RecoveryFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val titleView = dialogView.findViewById<android.widget.TextView>(R.id.recovery_confirm_title)
         val messageView = dialogView.findViewById<android.widget.TextView>(R.id.recovery_confirm_message)
@@ -481,6 +485,7 @@ class RecoveryFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         dialogView.findViewById<android.widget.Button>(R.id.btn_later).setOnClickListener {
             dialog.dismiss()

@@ -29,6 +29,7 @@ import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.managers.SystemUpdateManager
+import by.quty.launch.core.utilities.DialogBlurHelper
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import java.io.File
@@ -162,6 +163,7 @@ class DeveloperFragment : Fragment() {
                 .create()
 
             dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+            DialogBlurHelper.apply(dialog, requireActivity().window)
 
             val contentTextView: TextView = dialogView.findViewById(R.id.dev_manifest_content)
             contentTextView.text = displayText
@@ -299,6 +301,7 @@ class DeveloperFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val titleView: TextView = dialogView.findViewById(R.id.dev_confirm_title)
         titleView.setText(R.string.dev_reset_onboarding_dialog_title)
@@ -347,6 +350,7 @@ class DeveloperFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val titleView: TextView = dialogView.findViewById(R.id.dev_restart_title)
         titleView.setText(R.string.dev_reset_onboarding_restart_title)
@@ -409,6 +413,7 @@ class DeveloperFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         dialogView.findViewById<Button>(R.id.dev_restart_cancel_button).setOnClickListener {
             dialog.dismiss()

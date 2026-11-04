@@ -29,6 +29,7 @@ import by.quty.launch.core.adapters.ColorSchemeAdapter
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.model.ColorSchemeModel
+import by.quty.launch.core.utilities.DialogBlurHelper
 
 /**
  * «Персонализация»: активная оболочка, магазин, цветовые схемы, анимации.
@@ -296,6 +297,7 @@ class ShellFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         dialogView.findViewById<ImageButton>(R.id.shell_info_close_button).setOnClickListener {
             dialog.dismiss()

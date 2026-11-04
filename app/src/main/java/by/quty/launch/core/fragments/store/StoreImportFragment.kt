@@ -24,6 +24,7 @@ import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellImportResult
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.managers.ShellPreviewResult
+import by.quty.launch.core.utilities.DialogBlurHelper
 import kotlinx.coroutines.launch
 
 /**
@@ -166,6 +167,7 @@ class StoreImportFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val nameView: TextView = dialogView.findViewById(R.id.import_preview_name)
         val warningView: TextView = dialogView.findViewById(R.id.import_preview_warning)
@@ -292,6 +294,7 @@ class StoreImportFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val titleView = dialogView.findViewById<TextView>(R.id.recovery_confirm_title)
         val messageView = dialogView.findViewById<TextView>(R.id.recovery_confirm_message)

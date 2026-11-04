@@ -18,6 +18,7 @@ import by.quty.launch.R
 import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.utilities.PopupMenuHelper
+import by.quty.launch.core.utilities.DialogBlurHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -158,6 +159,7 @@ class LoggerFilesFragment : Fragment() {
                 .create()
 
             dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+            DialogBlurHelper.apply(dialog, requireActivity().window)
 
             val nameView: TextView = dialogView.findViewById(R.id.logger_file_dialog_name)
             nameView.text = file.name

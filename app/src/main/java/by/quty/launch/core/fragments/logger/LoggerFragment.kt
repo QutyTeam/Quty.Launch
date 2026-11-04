@@ -30,6 +30,7 @@ import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.model.LoggerEntryModel
 import by.quty.launch.core.model.LoggerLevelModel
 import by.quty.launch.core.model.LoggerTagModel
+import by.quty.launch.core.utilities.DialogBlurHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -169,6 +170,7 @@ class LoggerFragment : Fragment(), LoggerManager.LoggerListener {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val levelsContainer =
             dialogView.findViewById<LinearLayout>(R.id.logger_filter_levels_container)
@@ -424,6 +426,7 @@ class LoggerFragment : Fragment(), LoggerManager.LoggerListener {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         val subtitleView: TextView = dialogView.findViewById(R.id.logger_details_subtitle)
         val time = timeFormat.format(Date(entry.timestamp))

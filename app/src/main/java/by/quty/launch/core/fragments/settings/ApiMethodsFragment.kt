@@ -22,6 +22,7 @@ import by.quty.launch.api.router.ApiRouter
 import by.quty.launch.core.managers.ApiPermissionManager
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
+import by.quty.launch.core.utilities.DialogBlurHelper
 
 /**
  * Список API-методов с разбивкой на «используется оболочкой» и «остальные».
@@ -322,6 +323,7 @@ class ApiMethodsFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         dialogView.findViewById<View>(R.id.legend_close_button).setOnClickListener {
             dialog.dismiss()
@@ -356,6 +358,7 @@ class ApiMethodsFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         dialogView.findViewById<View>(R.id.api_methods_reset_close_button).setOnClickListener {
             dialog.dismiss()
@@ -402,6 +405,7 @@ class ApiMethodsFragment : Fragment() {
             .create()
 
         dialog.window?.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        DialogBlurHelper.apply(dialog, requireActivity().window)
 
         dialogView.findViewById<TextView>(R.id.api_permission_message).text =
             getString(R.string.api_methods_regrant_message, shellName, method.name)

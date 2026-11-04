@@ -25,6 +25,7 @@ import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.managers.SystemUpdateManager
 import by.quty.launch.core.model.LoggerTagModel
+import by.quty.launch.core.utilities.DialogBlurHelper
 import by.quty.launch.core.webview.JsBridge
 import by.quty.launch.core.webview.LauncherWebView
 import kotlinx.coroutines.Dispatchers
@@ -283,7 +284,7 @@ class MainActivity : BaseActivity() {
                     dialog.dismiss()
                 }
 
-            dialog.setOnDismissListener {
+            DialogBlurHelper.apply(dialog, window) {
                 if (continuation.isActive) continuation.resume(granted)
             }
 
