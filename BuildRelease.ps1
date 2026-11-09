@@ -426,7 +426,7 @@ $jsonContent = @"
 {
   "version": "$newVersionName",
   "versionCode": $newVersionCode,
-  "downloadUrl": "https://raw.githubusercontent.com/Sanya2104/Quty.Launch.Server/main/updates/apk/$apkFilename",
+  "downloadUrl": "https://raw.githubusercontent.com/QutyTeam/Quty.Launch.Server/main/updates/apk/$apkFilename",
   "changelog": "$jsonChangelog",
   "releaseDate": "$(Get-Date -Format dd-MM-yyyy)",
   "isCritical": $isCriticalJson,

@@ -15,7 +15,7 @@ object CoreConfig {
     const val CONTACT_TELEGRAM_URL = "https://t.me/QutyLaunch"
 
     /** Ссылка на репозиторий проекта на GitHub */
-    const val CONTACT_GITHUB_URL = "https://github.com/Sanya2104/Quty.Launch"
+    const val CONTACT_GITHUB_URL = "https://github.com/QutyTeam/Quty.Launch"
 
     // ============================================================
     // ===== НАСТРОЙКИ ОБОЛОЧЕК (по умолчанию) ====================
@@ -117,10 +117,10 @@ object CoreConfig {
     // ============================================================
 
     /** URL для проверки обновлений приложения */
-    const val UPDATE_SERVER_URL = "https://raw.githubusercontent.com/Sanya2104/Quty.Launch.Server/main/updates/version.json"
+    const val UPDATE_SERVER_URL = "https://raw.githubusercontent.com/QutyTeam/Quty.Launch.Server/main/updates/version.json"
 
     /** URL каталога магазина (оболочки и другие ресурсы) */
-    const val STORE_URL = "https://raw.githubusercontent.com/Sanya2104/Quty.Launch.Server/main/store/shells.json"
+    const val STORE_URL = "https://raw.githubusercontent.com/QutyTeam/Quty.Launch.Server/main/store/shells.json"
 
     /** Таймаут подключения к сети (мс) */
     const val CONNECT_TIMEOUT_MS = 5000

@@ -374,7 +374,7 @@ Quty.Launch создаётся как универсальная основа д
 
 ## 🌟 Автор
 
-**Sanya2104**
+**QutyTeam**
 
-* [GitHub](https://github.com/Sanya2104)
+* [GitHub](https://github.com/QutyTeam)
 * [Telegram](https://t.me/QutyLaunch)
