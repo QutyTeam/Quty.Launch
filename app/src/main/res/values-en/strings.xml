@@ -428,6 +428,7 @@
     <string name="download_empty_file">Downloaded file is corrupted or empty</string>
     <string name="download_integrity_failed">Downloaded file failed the integrity check</string>
     <string name="download_host_not_allowed">Download blocked: untrusted server address</string>
+    <string name="update_signature_error">Update manifest signature check failed — update rejected</string>
     <string name="download_timeout">Server response timeout</string>
 
     <!-- Update manager — install -->

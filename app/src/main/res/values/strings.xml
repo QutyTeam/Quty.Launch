@@ -428,6 +428,7 @@
     <string name="download_empty_file">Скачанный файл повреждён или пуст</string>
     <string name="download_integrity_failed">Скачанный файл не прошёл проверку целостности</string>
     <string name="download_host_not_allowed">Загрузка заблокирована: недопустимый адрес сервера</string>
+    <string name="update_signature_error">Подпись манифеста обновлений не прошла проверку — обновление отклонено</string>
     <string name="download_timeout">Превышено время ожидания ответа от сервера</string>
 
     <!-- Менеджер обновлений — установка -->

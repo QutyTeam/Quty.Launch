@@ -9,6 +9,7 @@ import by.quty.launch.core.model.StoreItemModel
 import by.quty.launch.core.model.StoreItemTypeModel
 import by.quty.launch.core.model.StoreRemoteItemModel
 import by.quty.launch.core.utilities.AppInfoHelper
+import by.quty.launch.core.utilities.CatalogSignatureHelper
 import by.quty.launch.core.utilities.IntegrityHelper
 import by.quty.launch.core.utilities.UpdateHelper
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +44,15 @@ class StoreManager(private val context: Context) {
             connection.readTimeout = CoreConfig.READ_TIMEOUT_MS
 
             if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                var jsonString = connection.inputStream.bufferedReader().use { it.readText() }
+                val payload = connection.inputStream.use { it.readBytes() }
+
+                // Подпись каталога: хеши внутри JSON защищают от подмены файла,
+                // но не от компрометации самого репозитория каталога.
+                if (!isCatalogSignatureValid(payload)) {
+                    return@withContext null
+                }
+
+                var jsonString = String(payload, Charsets.UTF_8)
 
                 if (jsonString.startsWith("\uFEFF")) {
                     jsonString = jsonString.substring(1)
@@ -70,6 +79,34 @@ class StoreManager(private val context: Context) {
             LoggerManager.error(LoggerTagModel.STORE, "STORE.fetch  error", e)
             null
         }
+    }
+
+    /** true, если подпись каталога верна (или политика допускает её отсутствие). */
+    private suspend fun isCatalogSignatureValid(payload: ByteArray): Boolean {
+        val signature = CatalogSignatureHelper.fetchSignature(CoreConfig.STORE_SIGNATURE_URL)
+
+        val result = if (signature == null) {
+            CatalogSignatureHelper.Result.Missing
+        } else {
+            CatalogSignatureHelper.verify(payload, signature)
+        }
+
+        if (CatalogSignatureHelper.isAcceptable(result)) {
+            LoggerManager.info(LoggerTagModel.STORE, "STORE.signature  ok")
+            return true
+        }
+
+        val reason = when (result) {
+            is CatalogSignatureHelper.Result.Invalid -> result.reason ?: "invalid"
+            CatalogSignatureHelper.Result.Missing -> "signature not published"
+            CatalogSignatureHelper.Result.Verified -> "verified"
+        }
+
+        LoggerManager.error(
+            LoggerTagModel.STORE,
+            "STORE.signature  rejected  $reason"
+        )
+        return false
     }
 
     // ============================================================

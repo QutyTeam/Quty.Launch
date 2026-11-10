@@ -440,6 +440,9 @@ $jsonContent = @"
 "@
 
 try {
+    # Фиксируем LF: подпись считается по байтам, а Git с core.autocrlf=true
+    # иначе опубликует LF-версию, и подпись перестанет совпадать.
+    $jsonContent = $jsonContent -replace "`r`n", "`n"
     $utf8NoBom = New-Object System.Text.UTF8Encoding $false
     $bytes = $utf8NoBom.GetBytes($jsonContent)
     [System.IO.File]::WriteAllBytes($versionJson, $bytes)
@@ -451,6 +454,52 @@ try {
     Read-Host
     exit 1
 }
+
+# ============================================
+# ЭТАП: ПОДПИСЬ VERSION.JSON
+# ============================================
+# Без подписи приложение (CATALOG_SIGNATURE_POLICY = REQUIRE) отклонит
+# обновление, поэтому отсутствие openssl или ключа — это ошибка, а не warning.
+Write-StageHeader -Title "ПОДПИСЬ VERSION.JSON"
+
+$opensslPath = "C:\Program Files\Git\usr\bin\openssl.exe"
+$signingKeyPath = "D:\Android\Quty.Keys\catalog-signing-key.pem"
+
+if (-not (Test-Path $opensslPath)) {
+    Write-Err "openssl не найден: $opensslPath"
+    Write-Warn "Без подписи приложение отклонит обновление (политика REQUIRE)."
+    Write-Host ""
+    Write-Host "  Нажмите Enter для выхода..." -ForegroundColor White
+    Read-Host
+    exit 1
+}
+
+if (-not (Test-Path $signingKeyPath)) {
+    Write-Err "Ключ подписи не найден: $signingKeyPath"
+    Write-Warn "Восстановите ключ из резервной копии или выпустите новую версию ядра с новым ключом."
+    Write-Host ""
+    Write-Host "  Нажмите Enter для выхода..." -ForegroundColor White
+    Read-Host
+    exit 1
+}
+
+$signatureBin = "$versionJson.sig.bin"
+& $opensslPath dgst -sha256 -sign $signingKeyPath -out $signatureBin $versionJson
+
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $signatureBin)) {
+    Write-Err "Не удалось подписать version.json"
+    Write-Host ""
+    Write-Host "  Нажмите Enter для выхода..." -ForegroundColor White
+    Read-Host
+    exit 1
+}
+
+$signatureBase64 = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($signatureBin))
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText("$versionJson.sig", $signatureBase64, $utf8NoBom)
+Remove-Item $signatureBin -Force
+
+Write-Success "version.json.sig создан ($($signatureBase64.Length) символов base64)"
 
 # ============================================
 # ЭТАП: GIT PUSH

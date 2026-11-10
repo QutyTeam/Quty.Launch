@@ -13,6 +13,7 @@ import by.quty.launch.R
 import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.LoggerTagModel
+import by.quty.launch.core.utilities.CatalogSignatureHelper
 import by.quty.launch.core.utilities.IntegrityHelper
 import by.quty.launch.core.utilities.UpdateHelper
 import kotlinx.coroutines.Dispatchers
@@ -186,7 +187,40 @@ class SystemUpdateManager(private val context: Context) {
             connection.readTimeout = CoreConfig.READ_TIMEOUT_MS
 
             if (connection.responseCode == 200) {
-                val jsonString = connection.inputStream.bufferedReader().use { it.readText() }
+                val payload = connection.inputStream.use { it.readBytes() }
+
+                // Подпись манифеста: без неё подмена version.json увела бы
+                // пользователей на чужой APK с корректным хешем.
+                val signature = CatalogSignatureHelper.fetchSignature(CoreConfig.UPDATE_SIGNATURE_URL)
+
+                val signatureResult = if (signature == null) {
+                    CatalogSignatureHelper.Result.Missing
+                } else {
+                    CatalogSignatureHelper.verify(payload, signature)
+                }
+
+                if (!CatalogSignatureHelper.isAcceptable(signatureResult)) {
+                    val reason = when (signatureResult) {
+                        is CatalogSignatureHelper.Result.Invalid ->
+                            signatureResult.reason ?: "invalid"
+                        CatalogSignatureHelper.Result.Missing -> "signature not published"
+                        CatalogSignatureHelper.Result.Verified -> "verified"
+                    }
+
+                    LoggerManager.error(
+                        LoggerTagModel.UPDATE,
+                        "UPDATE.signature  rejected  $reason"
+                    )
+
+                    return@withContext UpdateCheckResult(
+                        hasUpdate = false,
+                        error = context.getString(R.string.update_signature_error)
+                    )
+                }
+
+                LoggerManager.info(LoggerTagModel.UPDATE, "UPDATE.signature  ok")
+
+                val jsonString = String(payload, Charsets.UTF_8)
                 val versionInfo = json.decodeFromString<VersionInfo>(jsonString)
 
                 val currentVersionCode = getCurrentVersionCode()

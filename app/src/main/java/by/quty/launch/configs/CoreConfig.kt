@@ -163,6 +163,35 @@ object CoreConfig {
     }
 
     // ============================================================
+    // ===== ПОДПИСЬ КАТАЛОГА И МАНИФЕСТА ОБНОВЛЕНИЙ ==============
+    // ============================================================
+
+    /** URL подписи каталога магазина (base64, RSA-3072 + SHA-256). */
+    const val STORE_SIGNATURE_URL = STORE_URL + ".sig"
+
+    /** URL подписи манифеста обновлений (base64, RSA-3072 + SHA-256). */
+    const val UPDATE_SIGNATURE_URL = UPDATE_SERVER_URL + ".sig"
+
+    /**
+     * Закреплённый публичный ключ подписи каталога и манифеста обновлений
+     * (X.509 SubjectPublicKeyInfo, base64).
+     *
+     * Приватная половина НЕ хранится в репозиториях: локально она лежит в
+     * `D:\Android\Quty.Keys\catalog-signing-key.pem`, в CI — в секрете
+     * `CATALOG_SIGNING_KEY`. Смена ключа = выпуск новой версии приложения.
+     */
+    const val CATALOG_SIGNING_PUBLIC_KEY =
+        "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAwBIy7Zh7KHg0F9FgnWrCgKlWxByyIsTq2rsTfE5IwBgFWl1/ceossCCM5dDUZzW2LY76uVPr36Y9XkM38ZNxDR+9FfICD95W5+iAYMoWfvkRMQ5E8KcJItBGzwtqW4LS9GiXrhZFlYZw2ioyRKyMsiLXHJDtT3eEQ+b0D5shsGH3kVdg6Tbp83Ep26YwAwc7LgltqtCAQulDG0zOt5JMi4AS35jVGR4+cSFE3rZ4CcnBqbKYg+3G++oX3w8ND2XWrzaOndyiWMv75GjdZHrEFOfFlYGUAsqbF23L70P2gkno3PcDsxh4QK4e11Mmx0J4kUYg82cdzcDipDU9S5xO6KoL9HamgswrVdriHmeeDY+RHcRZI7rdodD1YV559y9zg7cqb+YbVmcr+zjAMOD34jOZFEd8ElkGSgAnsX7ZnOJR6LKBurDOcIOid8BMO6/4wOd1IP8K2+QivluITsXldHgwn+JbBWVaEYWihlZCm7lGkG5mK0YjfUb0XCWz2bkzAgMBAAE="
+
+    /**
+     * Политика проверки подписи каталога и манифеста обновлений.
+     *
+     * REQUIRE — без подписи данные не принимаются (закрывает подмену каталога).
+     * WARN — отсутствие подписи только логируется; неверная подпись отклоняется всегда.
+     */
+    val CATALOG_SIGNATURE_POLICY: IntegrityPolicy = IntegrityPolicy.REQUIRE
+
+    // ============================================================
     // ===== КЭШ ==================================================
     // ============================================================
 
