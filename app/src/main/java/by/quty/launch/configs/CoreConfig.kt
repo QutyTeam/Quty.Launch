@@ -122,6 +122,19 @@ object CoreConfig {
     /** URL каталога магазина (оболочки и другие ресурсы) */
     const val STORE_URL = "https://raw.githubusercontent.com/QutyTeam/Quty.Launch.Server/main/store/shells.json"
 
+    /**
+     * Хосты, с которых ядру разрешено скачивать пакеты (оболочки, APK).
+     *
+     * Проверяется и исходный URL, и конечный после редиректов: подменённый
+     * или устаревший каталог не должен увести загрузку на чужой сервер.
+     * Свой CDN добавляйте сюда явно.
+     */
+    val DOWNLOAD_ALLOWED_HOSTS = listOf(
+        "raw.githubusercontent.com",
+        "github.com",
+        "objects.githubusercontent.com"
+    )
+
     /** Таймаут подключения к сети (мс) */
     const val CONNECT_TIMEOUT_MS = 5000
 
@@ -130,6 +143,24 @@ object CoreConfig {
 
     /** Размер буфера при скачивании файлов (байт) */
     const val DOWNLOAD_BUFFER_SIZE = 8192
+
+    /**
+     * Политика проверки SHA-256 скачанных пакетов (оболочки с сервера, APK).
+     *
+     * REQUIRE — каталог обязан публиковать хеш, иначе пакет не принимается.
+     * WARN — отсутствие хеша только логируется (переходный режим на время,
+     * пока каталог не обновлён); расхождение хеша отклоняется при любой политике.
+     */
+    val STORE_INTEGRITY_POLICY: IntegrityPolicy = IntegrityPolicy.REQUIRE
+
+    /** Политика проверки контрольной суммы скачанного пакета. */
+    enum class IntegrityPolicy {
+        /** Без опубликованного хеша пакет не принимается. */
+        REQUIRE,
+
+        /** Отсутствие хеша логируется, расхождение отклоняется всегда. */
+        WARN
+    }
 
     // ============================================================
     // ===== КЭШ ==================================================
@@ -156,6 +187,34 @@ object CoreConfig {
 
     /** Лимит суммарного распакованного размера оболочки (байт) — защита от zip bomb */
     const val MAX_SHELL_UNPACKED_SIZE_BYTES = 250L * 1024 * 1024 // 250 MB
+
+    /** Префикс URL встроенных оболочек — единственный доверенный https-origin. */
+    const val SHELL_ASSET_URL_PREFIX = "https://appassets.androidplatform.net/assets/shells/"
+
+    /** Префикс URL пользовательских оболочек, распакованных в files/shells/active. */
+    const val SHELL_CUSTOM_URL_PREFIX = "quty://shells/active/"
+
+    /**
+     * Content-Security-Policy для документов оболочки (заголовок ответа).
+     *
+     * JsBridge (`window.Android`) доступен любому скрипту в документе, поэтому
+     * чужой код в страницу оболочки попадать не должен:
+     * - script-src — только свой origin (+ встроенные скрипты, их пишут оболочки,
+     *   и blob: для воркеров); remote-скрипты и их фреймы отсекаются;
+     * - frame-src/child-src 'self' — cross-origin iframe тоже видит JS-интерфейс;
+     * - object-src 'none', base-uri 'self' — без плагинов и подмены base;
+     * - img/font/media/connect — любые https, чтобы оболочки не потеряли превью,
+     *   шрифты и обращения к своим API.
+     */
+    const val SHELL_CSP = "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; " +
+            "style-src 'self' 'unsafe-inline' data:; " +
+            "img-src 'self' data: blob: https:; " +
+            "font-src 'self' data: https:; " +
+            "media-src 'self' data: blob: https:; " +
+            "connect-src 'self' data: blob: https:; " +
+            "frame-src 'self'; child-src 'self'; worker-src 'self' blob:; " +
+            "object-src 'none'; base-uri 'self'; form-action 'self'"
 
     // ============================================================
     // ===== WEBVIEW ==============================================

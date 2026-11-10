@@ -426,6 +426,8 @@
     <string name="download_not_enough_space">Not enough free space for download</string>
     <string name="download_http_error" formatted="false">Download error: server returned %d</string>
     <string name="download_empty_file">Downloaded file is corrupted or empty</string>
+    <string name="download_integrity_failed">Downloaded file failed the integrity check</string>
+    <string name="download_host_not_allowed">Download blocked: untrusted server address</string>
     <string name="download_timeout">Server response timeout</string>
 
     <!-- Update manager — install -->
@@ -657,6 +659,8 @@
     <string name="store_incompatible">Resource is incompatible with the current Quty.Launch version</string>
     <string name="store_download_error">Download error</string>
     <string name="store_save_error">Failed to save</string>
+    <string name="store_integrity_failed">File is corrupted or tampered with: checksum mismatch</string>
+    <string name="store_integrity_missing">Catalog has no checksum — installation refused</string>
     <string name="store_install_success" formatted="false">Resource "%s" installed!</string>
 
     <!-- Version labels in the store item detail screen -->
@@ -876,6 +880,7 @@
     <string name="js_bridge_send_error" formatted="false">Failed to send result to JS: %s</string>
     <string name="js_bridge_timeout_error">Execution timed out</string>
     <string name="js_bridge_cancelled_error">Execution cancelled</string>
+    <string name="js_bridge_untrusted_document_error">Call rejected: document is not a shell</string>
 
     <!-- ============================================================ -->
     <!-- ===== LAUNCHER WEBVIEW ===================================== -->

@@ -41,6 +41,18 @@ class JsBridge(
             "JSBRIDGE.call  $method"
         )
 
+        // Интерфейс `Android` видит любой скрипт в WebView, поэтому вызов
+        // принимается только из документа оболочки: внешняя страница или
+        // файл из quty:// вне shells/active моста не получают.
+        if (!isTrustedCaller()) {
+            LoggerManager.warn(
+                LoggerTagModel.JSBRIDGE,
+                "JSBRIDGE.denied  untrusted document  $method"
+            )
+            sendResultToJs(callbackId, buildUntrustedDocumentJson(), null)
+            return
+        }
+
         bridgeScope.launch {
             try {
                 // Метод не заявлен в manifest.json — спрашиваем пользователя один раз.
@@ -86,6 +98,25 @@ class JsBridge(
             }.toString()
         } catch (_: Exception) {
             """{"success":false,"code":"denied","error":"Permission denied"}"""
+        }
+    }
+
+    /** true, если вызов пришёл из документа оболочки, а не из чужой страницы. */
+    private fun isTrustedCaller(): Boolean {
+        val webView = webViewRef?.get() ?: return false
+        return webView.isTrustedDocument()
+    }
+
+    /** Формирует JSON отказа с кодом `untrusted_document`. */
+    private fun buildUntrustedDocumentJson(): String {
+        return try {
+            JSONObject().apply {
+                put("success", false)
+                put("code", "untrusted_document")
+                put("error", context.getString(R.string.js_bridge_untrusted_document_error))
+            }.toString()
+        } catch (_: Exception) {
+            """{"success":false,"code":"untrusted_document","error":"Untrusted document"}"""
         }
     }
 

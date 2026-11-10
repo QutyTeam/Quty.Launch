@@ -66,13 +66,22 @@ data class StoreItemModel(
     val isLocalOnly: Boolean
         get() = remoteInfo == null
 
-    /** Можно установить: в каталоге и (не установлено или версия локального файла неизвестна). */
+    /** Можно установить: элемент есть в каталоге и ещё не установлен. */
     val canInstall: Boolean
-        get() = remoteInfo != null && (!isInstalled || installedVersion.isNullOrEmpty())
+        get() = remoteInfo != null && !isInstalled
 
-    /** Можно обновить (есть обновление). */
+    /**
+     * Можно обновить: элемент установлен, а версия локального файла неизвестна
+     * (манифест без version) либо на сервере она новее.
+     *
+     * Взаимоисключающе с canInstall: у установленного элемента не бывает
+     * одновременно «Установить» и «Обновить» — оба пункта вели в один и тот же
+     * installItem(), но выглядели как разные действия.
+     */
     val canUpdate: Boolean
-        get() = updateAvailable
+        get() = isInstalled &&
+                remoteInfo?.version != null &&
+                (installedVersion.isNullOrEmpty() || updateAvailable)
 
     /** Можно применить (установлено и не активно). */
     val canApply: Boolean

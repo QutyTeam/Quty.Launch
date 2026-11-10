@@ -19,5 +19,11 @@ data class StoreRemoteItemModel(
     val orientation: String? = null,
     val repoUrl: String? = null,
     val telegram: String? = null,
-    val datePublished: String = ""
+    val datePublished: String = "",
+
+    /**
+     * SHA-256 файла пакета (hex, можно с префиксом `sha256:`).
+     * Сверяется до установки: см. IntegrityHelper и CoreConfig.STORE_INTEGRITY_POLICY.
+     */
+    val sha256: String? = null
 )

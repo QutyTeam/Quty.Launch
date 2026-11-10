@@ -409,6 +409,10 @@ $apkSizeHuman = if ($apkSize -gt 1MB) {
 }
 Write-Info "Размер APK: $apkSizeHuman"
 
+# SHA-256 — ядро сверяет его с version.json перед установкой обновления
+$apkSha256 = (Get-FileHash -LiteralPath $destApk -Algorithm SHA256).Hash.ToLower()
+Write-Info "SHA-256: $apkSha256"
+
 # ============================================
 # ЭТАП: СОЗДАНИЕ VERSION.JSON
 # ============================================
@@ -430,7 +434,8 @@ $jsonContent = @"
   "changelog": "$jsonChangelog",
   "releaseDate": "$(Get-Date -Format dd-MM-yyyy)",
   "isCritical": $isCriticalJson,
-  "size": "$apkSizeHuman"
+  "size": "$apkSizeHuman",
+  "sha256": "$apkSha256"
 }
 "@
 

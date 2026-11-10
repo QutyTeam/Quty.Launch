@@ -13,6 +13,7 @@ import by.quty.launch.R
 import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.LoggerTagModel
+import by.quty.launch.core.utilities.IntegrityHelper
 import by.quty.launch.core.utilities.UpdateHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -35,7 +36,10 @@ data class VersionInfo(
     val changelog: String,
     val releaseDate: String,
     val isCritical: Boolean,
-    val size: String
+    val size: String,
+
+    /** SHA-256 APK (hex, можно с префиксом `sha256:`); сверяется до установки. */
+    val sha256: String? = null
 )
 
 /** Результат проверки обновлений. */
@@ -256,6 +260,19 @@ class SystemUpdateManager(private val context: Context) {
 
                 val file = storageManager.get(StorageDirectory.UPDATES, fileName)
                 if (storageManager.isValidFile(file)) {
+                    // Файл мог остаться с прошлых проверок — сверяем хеш заново.
+                    val integrityError = checkIntegrity(
+                        file = file,
+                        expectedRaw = versionInfo.sha256,
+                        label = "cached ${versionInfo.version}"
+                    )
+
+                    if (integrityError != null) {
+                        deleteApkFile(fileName)
+                        clearDownloadMark(versionInfo.versionCode)
+                        return@withContext Pair(false, null)
+                    }
+
                     val uri = storageManager.getUri(file)
                     return@withContext Pair(true, uri)
                 } else {
@@ -402,6 +419,21 @@ class SystemUpdateManager(private val context: Context) {
                 return@withContext false
             }
 
+            // Сверяем APK с version.json до сохранения в updates/.
+            val integrityError = checkIntegrity(
+                file = file,
+                expectedRaw = versionInfo.sha256,
+                label = "apk ${versionInfo.version}"
+            )
+
+            if (integrityError != null) {
+                file.delete()
+                withContext(Dispatchers.Main) {
+                    listener.onError(integrityError)
+                }
+                return@withContext false
+            }
+
             val success = storageManager.set(
                 directory = StorageDirectory.UPDATES,
                 name = fileName,
@@ -458,6 +490,57 @@ class SystemUpdateManager(private val context: Context) {
                 listener.onError(e.message ?: context.getString(R.string.download_error))
             }
             false
+        }
+    }
+
+    /**
+     * Сверяет SHA-256 APK с version.json.
+     *
+     * null — файл принят или хеш не опубликован (APK всё равно проверяется
+     * подписью системного установщика); иначе текст ошибки для пользователя.
+     */
+    private suspend fun checkIntegrity(file: File, expectedRaw: String?, label: String): String? {
+        return when (val result = IntegrityHelper.verify(file, expectedRaw)) {
+            is IntegrityHelper.Result.Verified -> {
+                LoggerManager.info(
+                    LoggerTagModel.UPDATE,
+                    "UPDATE.integrity  ok  $label  sha256=${result.hash}"
+                )
+                null
+            }
+
+            is IntegrityHelper.Result.Mismatch -> {
+                LoggerManager.error(
+                    LoggerTagModel.UPDATE,
+                    "UPDATE.integrity  mismatch  $label  " +
+                            "expected=${result.expected}  actual=${result.actual}"
+                )
+                context.getString(R.string.download_integrity_failed)
+            }
+
+            is IntegrityHelper.Result.HashInvalid -> {
+                LoggerManager.error(
+                    LoggerTagModel.UPDATE,
+                    "UPDATE.integrity  invalid hash  $label  value=${result.raw}"
+                )
+                context.getString(R.string.download_integrity_failed)
+            }
+
+            is IntegrityHelper.Result.IoError -> {
+                LoggerManager.error(
+                    LoggerTagModel.UPDATE,
+                    "UPDATE.integrity  read error  $label  ${result.message ?: "—"}"
+                )
+                context.getString(R.string.download_integrity_failed)
+            }
+
+            IntegrityHelper.Result.HashMissing -> {
+                LoggerManager.warn(
+                    LoggerTagModel.UPDATE,
+                    "UPDATE.integrity  version.json has no sha256  $label"
+                )
+                null
+            }
         }
     }
 

@@ -3,6 +3,7 @@ package by.quty.launch.core.webview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.webkit.ConsoleMessage
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
@@ -38,12 +39,28 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
     /** Последнее применённое состояние анимаций — для onPageFinished. */
     private var lastAnimationsEnabled: Boolean = true
 
+    /**
+     * Доверен ли документ, который сейчас открыт в WebView.
+     *
+     * JS-интерфейс `Android` внедряется в страницу целиком и доступен любому
+     * скрипту в ней, поэтому JsBridge пускает вызовы только из документа
+     * оболочки (asset-origin или quty://shells/active).
+     */
+    @Volatile
+    private var trustedDocument: Boolean = false
+
     private var errorRetryCount = 0
     private var lastErrorUrl: String? = null
 
     private companion object {
         private const val MAX_RETRY_COUNT = CoreConfig.WEBVIEW_MAX_RETRY_COUNT
         private const val RETRY_DELAY_MS = CoreConfig.WEBVIEW_RETRY_DELAY_MS
+
+        /** Источники, документы из которых считаются доверенными для JsBridge. */
+        private val TRUSTED_URL_PREFIXES = listOf(
+            CoreConfig.SHELL_ASSET_URL_PREFIX,
+            CoreConfig.SHELL_CUSTOM_URL_PREFIX
+        )
     }
 
     /** Настраивает WebView: настройки, asset loader, chrome client. */
@@ -99,11 +116,60 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
             ): WebResourceResponse? {
                 val url = request.url.toString()
 
-                if (url.startsWith("quty://")) {
-                    return handleQutyScheme(url)
+                // Прямой доступ к файлам и content:// оболочке не нужен: ресурсы
+                // идут через asset loader и quty://, остальное отбиваем на ответе.
+                if (url.startsWith("file:") || url.startsWith("content:")) {
+                    LoggerManager.warn(
+                        LoggerTagModel.WEBVIEW,
+                        "WEBVIEW.request_blocked  $url"
+                    )
+                    return forbiddenResponse()
                 }
 
-                return assetLoader.shouldInterceptRequest(request.url)
+                if (url.startsWith("quty://")) {
+                    return applyShellSecurityHeaders(handleQutyScheme(url), url)
+                }
+
+                return applyShellSecurityHeaders(assetLoader.shouldInterceptRequest(request.url), url)
+            }
+
+            /**
+             * Добавляет CSP к HTML-документу оболочки: сторонние скрипты и фреймы
+             * не должны исполняться там, где доступен JsBridge.
+             */
+            private fun applyShellSecurityHeaders(
+                response: WebResourceResponse?,
+                url: String
+            ): WebResourceResponse? {
+                if (response == null) return null
+                if (!isTrustedShellUrl(url)) return response
+
+                val mimeType = response.mimeType
+                if (mimeType == null || !mimeType.contains("html", ignoreCase = true)) {
+                    return response
+                }
+
+                return try {
+                    val headers = response.responseHeaders?.toMutableMap() ?: mutableMapOf()
+                    headers["Content-Security-Policy"] = CoreConfig.SHELL_CSP
+                    headers["X-Content-Type-Options"] = "nosniff"
+                    response.responseHeaders = headers
+                    response
+                } catch (_: Exception) {
+                    response
+                }
+            }
+
+            /** Пустой ответ 403 для запросов, которые оболочке не разрешены. */
+            private fun forbiddenResponse(): WebResourceResponse {
+                return WebResourceResponse(
+                    "text/plain",
+                    "utf-8",
+                    403,
+                    "Forbidden",
+                    mapOf(),
+                    null
+                )
             }
 
             /** Отдаёт файл оболочки по quty://, с fallback на assets. */
@@ -257,6 +323,21 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
                 return true
             }
 
+            /** Запоминает, доверенный ли документ: по этому флагу работает гейт JsBridge. */
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+
+                val trusted = isTrustedShellUrl(url)
+                trustedDocument = trusted
+
+                if (!trusted) {
+                    LoggerManager.warn(
+                        LoggerTagModel.WEBVIEW,
+                        "WEBVIEW.untrusted_doc  ${url ?: "null"}  bridge=denied"
+                    )
+                }
+            }
+
             /** Применяет состояние анимаций после загрузки страницы. */
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
@@ -357,6 +438,30 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
         }
     }
 
+    /** true, если текущий документ WebView — документ оболочки (гейт для JsBridge). */
+    fun isTrustedDocument(): Boolean = trustedDocument
+
+    /**
+     * true, если URL принадлежит доверенному источнику оболочки:
+     * встроенные ассеты или распакованная пользовательская оболочка.
+     * Чужие origin'ы и выход из каталога через `..` доверенными не считаются.
+     */
+    private fun isTrustedShellUrl(url: String?): Boolean {
+        val candidate = url ?: return false
+
+        val prefix = TRUSTED_URL_PREFIXES.firstOrNull { candidate.startsWith(it) } ?: return false
+
+        val path = candidate
+            .removePrefix(prefix)
+            .substringBefore('?')
+            .substringBefore('#')
+
+        if (path.contains("..")) return false
+        if (path.contains("\\")) return false
+
+        return true
+    }
+
     /** Загружает оболочку: assets или quty://. */
     fun loadShell(shellName: String, isAsset: Boolean = true) {
         activeShellName = shellName
@@ -370,9 +475,9 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
         )
 
         val url = if (isAsset) {
-            "https://appassets.androidplatform.net/assets/shells/$shellName/index.html"
+            "${CoreConfig.SHELL_ASSET_URL_PREFIX}$shellName/index.html"
         } else {
-            "quty://shells/active/index.html"
+            "${CoreConfig.SHELL_CUSTOM_URL_PREFIX}index.html"
         }
         loadUrl(url)
     }

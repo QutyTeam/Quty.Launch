@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 /**
@@ -148,6 +149,9 @@ class ShellManager(
 
         /** Максимальная длина имени оболочки. */
         private const val MAX_SHELL_NAME_LENGTH = 64
+
+        /** Имя файла манифеста оболочки в архиве. */
+        private const val MANIFEST_FILE_NAME = "manifest.json"
 
         /** Допустимые символы имени оболочки: буквы, цифры, `_`, `-`, `.`. */
         private val SHELL_NAME_REGEX = Regex("^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
@@ -291,8 +295,13 @@ class ShellManager(
         )
 
         shellFiles.forEach { file ->
-            val manifest = readManifestFromZip(file)
-            val previewBase64 = loadPreviewFromZip(file, manifest?.preview)
+            val zipManifest = readManifestFromZip(file)
+            val manifest = zipManifest?.manifest
+            val previewBase64 = loadPreviewFromZip(
+                zipFile = file,
+                previewPath = manifest?.preview,
+                baseDir = zipManifest?.baseDir.orEmpty()
+            )
 
             shells.add(
                 Shell(
@@ -373,14 +382,26 @@ class ShellManager(
     // ЧТЕНИЕ MANIFEST И ПРЕВЬЮ
     // ============================================================
 
-    /** Читает manifest.json из ZIP. */
-    private fun readManifestFromZip(zipFile: File): ShellManifest? {
+    /** Манифест из архива вместе с папкой, в которой он лежит ("" — корень архива). */
+    private data class ZipManifest(val manifest: ShellManifest, val baseDir: String)
+
+    /**
+     * Читает manifest.json из ZIP.
+     *
+     * Сначала ищется корневой `manifest.json`, затем самый неглубокий вложенный:
+     * пакеты часто собирают «с папкой» (всё содержимое в `dist/`), и без этого
+     * у установленной оболочки терялись версия, orientation и apiMethods —
+     * магазин считал её версией «неизвестно» и предлагал обновление даже тогда,
+     * когда установлена актуальная версия.
+     */
+    private fun readManifestFromZip(zipFile: File): ZipManifest? {
         return try {
             ZipFile(zipFile).use { zip ->
-                val entry = zip.getEntry("manifest.json") ?: return null
-                zip.getInputStream(entry).bufferedReader().use {
+                val entry = findManifestEntry(zip) ?: return null
+                val manifest = zip.getInputStream(entry).bufferedReader().use {
                     json.decodeFromString<ShellManifest>(it.readText())
                 }
+                ZipManifest(manifest, entry.name.substringBeforeLast('/', ""))
             }
         } catch (e: Exception) {
             LoggerManager.warn(
@@ -392,13 +413,22 @@ class ShellManager(
         }
     }
 
-    /** Загружает превью из ZIP и конвертирует в Base64. */
-    private fun loadPreviewFromZip(zipFile: File, previewPath: String?): String? {
+    /** Ищет manifest.json: корень архива, иначе самый неглубокий вложенный. */
+    private fun findManifestEntry(zip: ZipFile): ZipEntry? {
+        zip.getEntry(MANIFEST_FILE_NAME)?.let { return it }
+
+        return zip.entries().asSequence()
+            .filter { !it.isDirectory && it.name.endsWith("/$MANIFEST_FILE_NAME") }
+            .minByOrNull { entry -> entry.name.count { ch -> ch == '/' } }
+    }
+
+    /** Загружает превью из ZIP и конвертирует в Base64 (путь — от папки манифеста). */
+    private fun loadPreviewFromZip(zipFile: File, previewPath: String?, baseDir: String): String? {
         if (previewPath.isNullOrEmpty()) return null
 
         return try {
             ZipFile(zipFile).use { zip ->
-                val entry = zip.getEntry(previewPath) ?: return null
+                val entry = findZipEntry(zip, baseDir, previewPath) ?: return null
                 zip.getInputStream(entry).use { inputStream ->
                     val bitmap = BitmapFactory.decodeStream(inputStream)
                     bitmap?.let { bitmapToBase64(it) }
@@ -407,6 +437,13 @@ class ShellManager(
         } catch (_: Exception) {
             null
         }
+    }
+
+    /** Файл из архива: как указано в манифесте, иначе относительно папки манифеста. */
+    private fun findZipEntry(zip: ZipFile, baseDir: String, path: String): ZipEntry? {
+        zip.getEntry(path)?.let { return it }
+        if (baseDir.isEmpty()) return null
+        return zip.getEntry("$baseDir/$path")
     }
 
     /** Загружает превью из assets и конвертирует в Base64. */
@@ -767,7 +804,7 @@ class ShellManager(
 
             val manifest = try {
                 ZipFile(tempFile).use { zip ->
-                    val entry = zip.getEntry("manifest.json")
+                    val entry = findManifestEntry(zip)
                         ?: return@withContext ShellPreviewResult.Failure.ManifestMissing
                     zip.getInputStream(entry).bufferedReader().use {
                         json.decodeFromString<ShellManifest>(it.readText())
@@ -875,19 +912,22 @@ class ShellManager(
                     return@withContext ShellImportResult.Failure.FileTooLarge
                 }
 
-                val manifest = try {
+                val zipManifest = try {
                     ZipFile(tempFile).use { zip ->
-                        val entry = zip.getEntry("manifest.json")
+                        val entry = findManifestEntry(zip)
                             ?: return@withContext ShellImportResult.Failure.ManifestMissing
-                        zip.getInputStream(entry).bufferedReader().use {
+                        val parsed = zip.getInputStream(entry).bufferedReader().use {
                             json.decodeFromString<ShellManifest>(it.readText())
                         }
+                        ZipManifest(parsed, entry.name.substringBeforeLast('/', ""))
                     }
                 } catch (_: java.util.zip.ZipException) {
                     return@withContext ShellImportResult.Failure.InvalidArchive
                 } catch (_: Exception) {
                     return@withContext ShellImportResult.Failure.ManifestInvalid
                 }
+
+                val manifest = zipManifest.manifest
 
                 if (!isValidShellName(manifest.name)) {
                     LoggerManager.warn(
@@ -926,7 +966,11 @@ class ShellManager(
                     return@withContext ShellImportResult.Failure.IoError(null)
                 }
 
-                val previewBase64 = loadPreviewFromZip(targetFile, manifest.preview)
+                val previewBase64 = loadPreviewFromZip(
+                    zipFile = targetFile,
+                    previewPath = manifest.preview,
+                    baseDir = zipManifest.baseDir
+                )
                 val imported = Shell(
                     name = targetName,
                     isDefault = false,

@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.StatFs
 import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
+import by.quty.launch.core.managers.LoggerManager
+import by.quty.launch.core.model.LoggerTagModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -90,6 +92,25 @@ object UpdateHelper {
     // СКАЧИВАНИЕ
     // ============================================================
 
+    /**
+     * true, если пакет можно качать с этого адреса: только https и только хост
+     * из CoreConfig.DOWNLOAD_ALLOWED_HOSTS (с поддоменами).
+     */
+    fun isAllowedDownloadUrl(url: String): Boolean {
+        return try {
+            val parsed = java.net.URI(url)
+            if (parsed.scheme?.equals("https", ignoreCase = true) != true) return false
+
+            val host = parsed.host?.lowercase() ?: return false
+
+            CoreConfig.DOWNLOAD_ALLOWED_HOSTS.any { allowed ->
+                host == allowed || host.endsWith(".$allowed")
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     /** Скачивает файл; при отмене корутины бросает CancellationException. */
     suspend fun downloadFile(
         context: Context,
@@ -104,6 +125,19 @@ object UpdateHelper {
         var outputStream: FileOutputStream? = null
 
         try {
+            // Пакеты качаем только с разрешённых https-хостов: подменённый каталог
+            // не должен увести загрузку на чужой сервер.
+            if (!isAllowedDownloadUrl(url)) {
+                LoggerManager.warn(
+                    LoggerTagModel.UPDATE,
+                    "DOWNLOAD.denied  host not allowed  $url"
+                )
+                withContext(Dispatchers.Main) {
+                    listener.onError(context.getString(R.string.download_host_not_allowed))
+                }
+                return@withContext null
+            }
+
             val fileSize = getFileSize(url)
 
             if (fileSize > 0 && !hasEnoughFreeSpace(fileSize)) {
@@ -123,6 +157,18 @@ object UpdateHelper {
             connection.connectTimeout = connectTimeout
             connection.readTimeout = readTimeout
             connection.connect()
+
+            // Редирект мог увести на другой хост — проверяем конечный адрес.
+            if (!isAllowedDownloadUrl(connection.url.toString())) {
+                LoggerManager.warn(
+                    LoggerTagModel.UPDATE,
+                    "DOWNLOAD.denied  redirect not allowed  ${connection.url}"
+                )
+                withContext(Dispatchers.Main) {
+                    listener.onError(context.getString(R.string.download_host_not_allowed))
+                }
+                return@withContext null
+            }
 
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                 val errorMsg = context.getString(R.string.download_http_error, connection.responseCode)

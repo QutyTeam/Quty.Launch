@@ -426,6 +426,8 @@
     <string name="download_not_enough_space">Недостаточно свободного места для загрузки</string>
     <string name="download_http_error" formatted="false">Ошибка загрузки: сервер вернул код %d</string>
     <string name="download_empty_file">Скачанный файл повреждён или пуст</string>
+    <string name="download_integrity_failed">Скачанный файл не прошёл проверку целостности</string>
+    <string name="download_host_not_allowed">Загрузка заблокирована: недопустимый адрес сервера</string>
     <string name="download_timeout">Превышено время ожидания ответа от сервера</string>
 
     <!-- Менеджер обновлений — установка -->
@@ -657,6 +659,8 @@
     <string name="store_incompatible">Ресурс несовместим с текущей версией Quty.Launch</string>
     <string name="store_download_error">Ошибка скачивания</string>
     <string name="store_save_error">Ошибка сохранения</string>
+    <string name="store_integrity_failed">Файл повреждён или подменён: контрольная сумма не совпала</string>
+    <string name="store_integrity_missing">Каталог не содержит контрольной суммы — установка отклонена</string>
     <string name="store_install_success" formatted="false">Ресурс «%s» установлен!</string>
 
     <!-- Метки версий в детальном экране магазина -->
@@ -876,6 +880,7 @@
     <string name="js_bridge_send_error" formatted="false">Не удалось отправить результат в JS: %s</string>
     <string name="js_bridge_timeout_error">Время выполнения истекло</string>
     <string name="js_bridge_cancelled_error">Выполнение отменено</string>
+    <string name="js_bridge_untrusted_document_error">Вызов отклонён: документ не является оболочкой</string>
 
     <!-- ============================================================ -->
     <!-- ===== LAUNCHER WEBVIEW ===================================== -->

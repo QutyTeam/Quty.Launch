@@ -9,6 +9,7 @@ import by.quty.launch.core.model.StoreItemModel
 import by.quty.launch.core.model.StoreItemTypeModel
 import by.quty.launch.core.model.StoreRemoteItemModel
 import by.quty.launch.core.utilities.AppInfoHelper
+import by.quty.launch.core.utilities.IntegrityHelper
 import by.quty.launch.core.utilities.UpdateHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -247,6 +248,18 @@ class StoreManager(private val context: Context) {
                 return@withContext false
             }
 
+            // Целостность пакета проверяем до записи в SHELLS: подменённая
+            // оболочка получит доступ к JsBridge, поэтому дальше неё не пускаем.
+            val integrityError = checkIntegrity(file, remote.sha256, item.name)
+
+            if (integrityError != null) {
+                file.delete()
+                withContext(Dispatchers.Main) {
+                    listener.onError(integrityError)
+                }
+                return@withContext false
+            }
+
             val success = storageManager.set(
                 directory = StorageDirectory.SHELLS,
                 name = fileName,
@@ -287,6 +300,59 @@ class StoreManager(private val context: Context) {
                 listener.onError(e.message ?: context.getString(R.string.store_install_error))
             }
             false
+        }
+    }
+
+    /**
+     * Сверяет SHA-256 скачанного пакета с каталогом.
+     * null — пакет принят; иначе текст ошибки для пользователя.
+     */
+    private suspend fun checkIntegrity(file: File, expectedRaw: String?, itemName: String): String? {
+        return when (val result = IntegrityHelper.verify(file, expectedRaw)) {
+            is IntegrityHelper.Result.Verified -> {
+                LoggerManager.info(
+                    LoggerTagModel.STORE,
+                    "STORE.integrity  ok  $itemName  sha256=${result.hash}"
+                )
+                null
+            }
+
+            is IntegrityHelper.Result.Mismatch -> {
+                LoggerManager.error(
+                    LoggerTagModel.STORE,
+                    "STORE.integrity  mismatch  $itemName  " +
+                            "expected=${result.expected}  actual=${result.actual}"
+                )
+                context.getString(R.string.store_integrity_failed)
+            }
+
+            is IntegrityHelper.Result.HashInvalid -> {
+                LoggerManager.error(
+                    LoggerTagModel.STORE,
+                    "STORE.integrity  invalid hash  $itemName  value=${result.raw}"
+                )
+                context.getString(R.string.store_integrity_failed)
+            }
+
+            is IntegrityHelper.Result.IoError -> {
+                LoggerManager.error(
+                    LoggerTagModel.STORE,
+                    "STORE.integrity  read error  $itemName  ${result.message ?: "—"}"
+                )
+                context.getString(R.string.store_integrity_failed)
+            }
+
+            IntegrityHelper.Result.HashMissing -> {
+                LoggerManager.warn(
+                    LoggerTagModel.STORE,
+                    "STORE.integrity  catalog has no sha256  $itemName"
+                )
+                if (CoreConfig.STORE_INTEGRITY_POLICY == CoreConfig.IntegrityPolicy.REQUIRE) {
+                    context.getString(R.string.store_integrity_missing)
+                } else {
+                    null
+                }
+            }
         }
     }
 

@@ -399,7 +399,9 @@ class StoreItemDetailFragment : Fragment() {
             btnMenu.setOnClickListener(null)
         } else {
             btnMenu.visibility = View.VISIBLE
-            btnMenu.setOnClickListener { showActionMenu(menuItems) }
+            // Собираем меню в момент нажатия, а не при биндинге: «Поделиться»
+            // и «Удалить» проверяют наличие файла и URI, а они могли измениться.
+            btnMenu.setOnClickListener { showActionMenu(buildMenuItems(item)) }
         }
     }
 
