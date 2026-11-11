@@ -26,8 +26,8 @@ android {
         minSdk = 29
         //noinspection OldTargetApi
         targetSdk = 36
-    versionCode = 839
-    versionName = "0.0.197"
+    versionCode = 841
+    versionName = "0.0.198"
         versionNameSuffix = "Alpha"
     }
 
@@ -44,7 +44,10 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8: сжатие и обфускация кода + удаление неиспользуемых ресурсов.
+            // Правила и объяснения — в proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

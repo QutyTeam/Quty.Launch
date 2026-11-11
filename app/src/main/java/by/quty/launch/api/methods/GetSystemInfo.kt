@@ -11,6 +11,8 @@ import by.quty.launch.api.model.SystemInfo
  */
 class GetSystemInfo : BaseApiMethod<Unit>() {
 
+    override val name: String = "GetSystemInfo"
+
     override val descriptionRes: Int
         get() = R.string.api_getsysteminfo_desc
 

@@ -31,6 +31,8 @@ class GetApps(
     private val context: Context
 ) : BaseApiMethod<Unit>() {
 
+    override val name: String = "GetApps"
+
     override val descriptionRes: Int
         get() = R.string.api_getapps_desc
 

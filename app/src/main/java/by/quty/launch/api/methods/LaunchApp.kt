@@ -21,6 +21,8 @@ class LaunchApp(
     private val context: Context
 ) : BaseApiMethod<LaunchAppParams>() {
 
+    override val name: String = "LaunchApp"
+
     override val descriptionRes: Int
         get() = R.string.api_launchapp_desc
 

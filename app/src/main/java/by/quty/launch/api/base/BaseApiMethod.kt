@@ -17,9 +17,15 @@ abstract class BaseApiMethod<P> {
         encodeDefaults = true
     }
 
-    /** Имя метода для регистрации (совпадает с именем класса). */
-    open val name: String
-        get() = this::class.simpleName ?: "unknown"
+    /**
+     * Имя метода для регистрации в ApiRouter.
+     *
+     * Задаётся явно в каждом методе, а не через `this::class.simpleName`:
+     * после включения R8 классы переименовываются (`GetApps` → `fr`),
+     * рефлексия возвращала обфусцированное имя, методы регистрировались
+     * под ним, и оболочка не находила ни одного API-метода.
+     */
+    abstract val name: String
 
     /** Краткое описание для UI. */
     @get:StringRes

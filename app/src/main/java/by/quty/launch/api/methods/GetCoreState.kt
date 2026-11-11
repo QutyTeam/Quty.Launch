@@ -25,6 +25,8 @@ class GetCoreState(
     private val shellManager: ShellManager
 ) : BaseApiMethod<Unit>() {
 
+    override val name: String = "GetCoreState"
+
     override val descriptionRes: Int
         get() = R.string.api_getcorestate_desc
 

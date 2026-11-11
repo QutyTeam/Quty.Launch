@@ -502,6 +502,29 @@ Remove-Item $signatureBin -Force
 Write-Success "version.json.sig создан ($($signatureBase64.Length) символов base64)"
 
 # ============================================
+# ЭТАП: АРХИВ MAPPING.TXT (R8)
+# ============================================
+# R8 обфусцирует код, поэтому стектрейсы из логов пользователей читаются
+# только по mapping.txt этой конкретной сборки. Храним вне репозитория:
+# файл раскрывает исходные имена классов и методов.
+Write-StageHeader -Title "АРХИВ MAPPING.TXT"
+
+$mappingSource = "app\build\outputs\mapping\release\mapping.txt"
+$mappingDir = "..\Quty.Mappings\$newVersionName-$newVersionCode"
+
+if (Test-Path $mappingSource) {
+    try {
+        New-Item -ItemType Directory -Force -Path $mappingDir | Out-Null
+        Copy-Item $mappingSource -Destination (Join-Path $mappingDir "mapping.txt") -Force
+        Write-Success "mapping.txt сохранён: $mappingDir\mapping.txt"
+    } catch {
+        Write-Warn "Не удалось сохранить mapping.txt: $($_.Exception.Message)"
+    }
+} else {
+    Write-Warn "mapping.txt не найден ($mappingSource) — стектрейсы этой сборки не расшифровать"
+}
+
+# ============================================
 # ЭТАП: GIT PUSH
 # ============================================
 Write-StageHeader -Title "GIT PUSH"

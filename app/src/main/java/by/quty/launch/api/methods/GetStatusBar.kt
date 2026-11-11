@@ -31,6 +31,8 @@ class GetStatusBar(
     private val context: Context
 ) : BaseApiMethod<Unit>() {
 
+    override val name: String = "GetStatusBar"
+
     override val descriptionRes: Int
         get() = R.string.api_getstatusbar_desc
 
