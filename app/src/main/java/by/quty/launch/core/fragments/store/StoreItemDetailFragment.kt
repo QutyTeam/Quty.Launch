@@ -20,7 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModelProvider
 import by.quty.launch.R
 import by.quty.launch.StoreActivity
 import by.quty.launch.core.managers.ConfigManager
@@ -31,8 +31,8 @@ import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.model.StoreItemModel
 import by.quty.launch.core.utilities.PopupMenuHelper
 import by.quty.launch.core.utilities.DialogBlurHelper
+import by.quty.launch.core.viewmodel.StoreItemDetailViewModel
 import com.bumptech.glide.Glide
-import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -54,12 +54,29 @@ class StoreItemDetailFragment : Fragment() {
     }
 
     private lateinit var itemName: String
-    private var item: StoreItemModel? = null
 
-    private lateinit var configManager: ConfigManager
-    private lateinit var shellManager: ShellManager
-    private lateinit var storeManager: StoreManager
-    private lateinit var storageManager: StorageManager
+    /**
+     * Состояние экрана живёт во ViewModel: элемент, признак установки и менеджеры
+     * переживают пересоздание, а установка не отменяется вместе с View.
+     */
+    private lateinit var viewModel: StoreItemDetailViewModel
+
+    private var item: StoreItemModel?
+        get() = if (::viewModel.isInitialized) viewModel.item else null
+        set(value) {
+            if (::viewModel.isInitialized) viewModel.item = value
+        }
+
+    private var isProcessing: Boolean
+        get() = ::viewModel.isInitialized && viewModel.isProcessing
+        set(value) {
+            if (::viewModel.isInitialized) viewModel.isProcessing = value
+        }
+
+    private val configManager: ConfigManager get() = viewModel.configManager
+    private val shellManager: ShellManager get() = viewModel.shellManager
+    private val storeManager: StoreManager get() = viewModel.storeManager
+    private val storageManager: StorageManager get() = viewModel.storageManager
 
     private lateinit var previewImage: ImageView
     private lateinit var nameText: TextView
@@ -108,8 +125,6 @@ class StoreItemDetailFragment : Fragment() {
     private lateinit var deleteButton: Button
     private lateinit var actionsContainer: LinearLayout
 
-    private var isProcessing = false
-
     /** Читает имя элемента из arguments. */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,11 +144,7 @@ class StoreItemDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        configManager = (activity as? by.quty.launch.BaseActivity)?.configManager
-            ?: ConfigManager(requireContext())
-        shellManager = ShellManager(requireContext(), configManager)
-        storeManager = StoreManager(requireContext())
-        storageManager = StorageManager(requireContext())
+        viewModel = ViewModelProvider(this)[StoreItemDetailViewModel::class.java]
 
         setupViews(view)
 
@@ -460,78 +471,43 @@ class StoreItemDetailFragment : Fragment() {
         )
     }
 
-    /** Установка / обновление. Перепроверяет nowActive после завершения. */
+    /** Установка / обновление. Работа идёт во ViewModel и переживает пересоздание. */
     private fun installItem(item: StoreItemModel) {
         if (isProcessing) return
-        isProcessing = true
 
         showInstallProgress(0)
         btnMenu.visibility = View.GONE
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val success = storeManager.installItem(
-                item = item,
-                listener = object : StoreManager.InstallListener {
-                    override fun onProgress(percent: Int) {
-                        if (!isAdded) return
-                        showInstallProgress(percent)
-                    }
+        viewModel.install(
+            target = item,
+            onProgress = { percent ->
+                if (isAdded) showInstallProgress(percent)
+            },
+            onSuccess = { activeVersion, nowActive ->
+                if (!isAdded) return@install
+                hideInstallProgress()
 
-                    override fun onSuccess() {
-                        if (!isAdded) return
-                        isProcessing = false
-                        hideInstallProgress()
+                (activity as? by.quty.launch.BaseActivity)?.markRestartRequired()
 
-                        val updatedShell = shellManager.getAvailableShells()
-                            .find { it.name == item.name }
-
-                        // Перепроверяем nowActive — активная могла смениться.
-                        val nowActive = configManager.getActiveShell() == item.name
-
-                        if (updatedShell != null) {
-                            if (nowActive) {
-                                viewLifecycleOwner.lifecycleScope.launch {
-                                    shellManager.setActiveShell(updatedShell)
-                                    (activity as? by.quty.launch.BaseActivity)
-                                        ?.markRestartRequired()
-
-                                    applyLocalActiveState(updatedShell.version)
-
-                                    reloadAndRebind()
-                                }
-                            } else {
-                                shellManager.reloadActiveShell()
-                                (activity as? by.quty.launch.BaseActivity)
-                                    ?.markRestartRequired()
-                                reloadAndRebind()
-                            }
-                        }
-
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.store_install_success, item.displayName),
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-
-                    override fun onError(message: String) {
-                        if (!isAdded) return
-                        isProcessing = false
-                        hideInstallProgress()
-                        updateActionUI(item)
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-                    }
+                if (nowActive && activeVersion != null) {
+                    applyLocalActiveState(activeVersion)
                 }
-            )
 
-            if (!success && isProcessing) {
-                isProcessing = false
-                if (isAdded) {
-                    hideInstallProgress()
-                    updateActionUI(item)
-                }
+                reloadAndRebind()
+
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.store_install_success, item.displayName),
+                    Toast.LENGTH_LONG
+                ).show()
+            },
+            onError = { message ->
+                if (!isAdded) return@install
+                hideInstallProgress()
+                updateActionUI(item)
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
             }
-        }
+        )
     }
 
     /** Сделать активной. */
@@ -539,24 +515,20 @@ class StoreItemDetailFragment : Fragment() {
         if (isProcessing) return
         isProcessing = true
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val availableShell = shellManager.getAvailableShells()
-                .find { it.name == item.name }
+        viewModel.apply(item) { availableShell ->
+            if (!isAdded) return@apply
+
+            isProcessing = false
 
             if (availableShell == null) {
-                isProcessing = false
                 updateActionUI(item)
                 Toast.makeText(
                     requireContext(),
                     R.string.store_install_error,
                     Toast.LENGTH_SHORT
                 ).show()
-                return@launch
+                return@apply
             }
-
-            shellManager.setActiveShell(availableShell)
-
-            isProcessing = false
 
             (activity as? by.quty.launch.BaseActivity)?.markRestartRequired()
 
@@ -664,10 +636,10 @@ class StoreItemDetailFragment : Fragment() {
 
     /** Удаляет оболочку; после refreshItems закрывает или обновляет экран. */
     private fun performDelete(item: StoreItemModel) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val success = shellManager.deleteShellByName(item.name)
+        val currentName = item.name
 
-            if (!isAdded) return@launch
+        viewModel.delete(currentName) { success ->
+            if (!isAdded) return@delete
 
             if (!success) {
                 Toast.makeText(
@@ -675,7 +647,7 @@ class StoreItemDetailFragment : Fragment() {
                     R.string.store_delete_error,
                     Toast.LENGTH_SHORT
                 ).show()
-                return@launch
+                return@delete
             }
 
             Toast.makeText(
@@ -686,8 +658,7 @@ class StoreItemDetailFragment : Fragment() {
 
             (activity as? by.quty.launch.BaseActivity)?.markRestartRequired()
 
-            val activity = activity as? StoreActivity ?: return@launch
-            val currentName = item.name
+            val activity = activity as? StoreActivity ?: return@delete
 
             activity.refreshItems {
                 if (!isAdded) return@refreshItems

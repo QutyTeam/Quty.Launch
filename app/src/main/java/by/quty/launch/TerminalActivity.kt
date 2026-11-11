@@ -11,7 +11,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import by.quty.launch.core.adapters.TerminalAdapter
@@ -19,7 +19,7 @@ import by.quty.launch.core.managers.TerminalHistoryManager
 import by.quty.launch.core.managers.TerminalManager
 import by.quty.launch.core.model.TerminalLineModel
 import by.quty.launch.core.model.TerminalSegmentModel
-import kotlinx.coroutines.launch
+import by.quty.launch.core.viewmodel.TerminalViewModel
 
 /**
  * Терминал ядра: лог + ввод, история стрелками, IME-insets.
@@ -33,15 +33,10 @@ class TerminalActivity : BaseActivity() {
     private lateinit var btnSend: ImageButton
     private lateinit var btnClose: View
 
+    /** Лог, флаг выполнения и история команд живут в ViewModel. */
+    private lateinit var viewModel: TerminalViewModel
+
     private lateinit var adapter: TerminalAdapter
-    private val lines = mutableListOf<TerminalLineModel>()
-
-    private var isExecuting = false
-
-    // ===== Навигация по истории =====
-
-    private var historyIndex = -1
-    private var historyDraft: String = ""
 
     /** Инициализирует экран терминала и все подсистемы. */
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +45,8 @@ class TerminalActivity : BaseActivity() {
 
         applyOrientation()
 
+        viewModel = ViewModelProvider(this)[TerminalViewModel::class.java]
+
         initViews()
         setupImeInsets()
         setupLog()
@@ -57,7 +54,10 @@ class TerminalActivity : BaseActivity() {
         setupHistoryNavigation()
         setupBackHandler()
 
-        addOutput(getString(R.string.terminal_welcome))
+        // Приветствие добавляется один раз: при пересоздании лог уже есть.
+        if (viewModel.addWelcomeOnce(getString(R.string.terminal_welcome))) {
+            adapter.notifyItemInserted(viewModel.lines.size - 1)
+        }
 
         window.decorView.post {
             val strictMode = configManager.isStrictModeEnabled()
@@ -93,7 +93,7 @@ class TerminalActivity : BaseActivity() {
 
     /** Настраивает RecyclerView лога терминала. */
     private fun setupLog() {
-        adapter = TerminalAdapter(lines)
+        adapter = TerminalAdapter(viewModel.lines)
         recyclerLog.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
@@ -151,16 +151,16 @@ class TerminalActivity : BaseActivity() {
         val history = TerminalHistoryManager.getReversed(this)
         if (history.isEmpty()) return
 
-        if (historyIndex == -1) {
-            historyDraft = editText.text.toString()
-            historyIndex = 0
-        } else if (historyIndex < history.size - 1) {
-            historyIndex++
+        if (viewModel.historyIndex == -1) {
+            viewModel.historyDraft = editText.text.toString()
+            viewModel.historyIndex = 0
+        } else if (viewModel.historyIndex < history.size - 1) {
+            viewModel.historyIndex++
         } else {
             return
         }
 
-        val command = history[historyIndex]
+        val command = history[viewModel.historyIndex]
         editText.setText(command)
         editText.setSelection(command.length)
     }
@@ -168,25 +168,24 @@ class TerminalActivity : BaseActivity() {
     /** Шаг вниз по истории (старее > новее, затем черновик). */
     private fun navigateHistoryDown(editText: EditText) {
         val history = TerminalHistoryManager.getReversed(this)
-        if (history.isEmpty() || historyIndex == -1) return
+        if (history.isEmpty() || viewModel.historyIndex == -1) return
 
-        if (historyIndex > 0) {
-            historyIndex--
-            val command = history[historyIndex]
+        if (viewModel.historyIndex > 0) {
+            viewModel.historyIndex--
+            val command = history[viewModel.historyIndex]
             editText.setText(command)
             editText.setSelection(command.length)
         } else {
-            historyIndex = -1
-            editText.setText(historyDraft)
-            editText.setSelection(historyDraft.length)
-            historyDraft = ""
+            viewModel.historyIndex = -1
+            editText.setText(viewModel.historyDraft)
+            editText.setSelection(viewModel.historyDraft.length)
+            viewModel.historyDraft = ""
         }
     }
 
     /** Сбрасывает навигацию по истории. */
     private fun resetHistoryNavigation() {
-        historyIndex = -1
-        historyDraft = ""
+        viewModel.resetHistoryNavigation()
     }
 
     /** Настраивает обработчик «Назад» — он закрывает терминал. */
@@ -207,7 +206,7 @@ class TerminalActivity : BaseActivity() {
 
     /** Парсит ввод, вызывает команду, пишет результат в лог. */
     private fun submitInput() {
-        if (isExecuting) return
+        if (viewModel.isExecuting) return
 
         val raw = inputField.text.toString()
         if (raw.isBlank()) return
@@ -235,10 +234,9 @@ class TerminalActivity : BaseActivity() {
             return
         }
 
-        isExecuting = true
-        lifecycleScope.launch {
-            val result = TerminalManager.execute(this@TerminalActivity, parsed)
-            isExecuting = false
+        // Выполнение — в viewModelScope: пересоздание активности его не отменит.
+        viewModel.execute(this, parsed) { result ->
+            if (isFinishing || isDestroyed) return@execute
 
             if (result.text.isNotEmpty()) {
                 val isError = result.text.startsWith("!")
@@ -247,7 +245,7 @@ class TerminalActivity : BaseActivity() {
                 } else {
                     addOutput(result.text, result.segments)
 
-                    if (TerminalManager.isWriteCommand(this@TerminalActivity, parsed.name)) {
+                    if (TerminalManager.isWriteCommand(this, parsed.name)) {
                         markRestartRequired()
                     }
                 }
@@ -274,7 +272,7 @@ class TerminalActivity : BaseActivity() {
 
     /** Добавляет в лог строку ввода. */
     private fun addInput(text: String) {
-        lines.add(TerminalLineModel(TerminalLineModel.LineType.INPUT, text))
+        viewModel.lines.add(TerminalLineModel(TerminalLineModel.LineType.INPUT, text))
         notifyAndScroll()
     }
 
@@ -283,7 +281,7 @@ class TerminalActivity : BaseActivity() {
         text: String,
         segments: List<TerminalSegmentModel> = emptyList()
     ) {
-        lines.add(TerminalLineModel(TerminalLineModel.LineType.OUTPUT, text, segments))
+        viewModel.lines.add(TerminalLineModel(TerminalLineModel.LineType.OUTPUT, text, segments))
         notifyAndScroll()
     }
 
@@ -292,24 +290,24 @@ class TerminalActivity : BaseActivity() {
         text: String,
         segments: List<TerminalSegmentModel> = emptyList()
     ) {
-        lines.add(TerminalLineModel(TerminalLineModel.LineType.ERROR, text, segments))
+        viewModel.lines.add(TerminalLineModel(TerminalLineModel.LineType.ERROR, text, segments))
         notifyAndScroll()
     }
 
     /** Очищает лог терминала. */
     private fun clearLog() {
-        val sizeBefore = lines.size
+        val sizeBefore = viewModel.lines.size
         if (sizeBefore == 0) return
 
-        lines.clear()
+        viewModel.lines.clear()
         adapter.notifyItemRangeRemoved(0, sizeBefore)
     }
 
     /** Уведомляет адаптер о новой строке и прокручивает вниз. */
     private fun notifyAndScroll() {
-        adapter.notifyItemInserted(lines.size - 1)
+        adapter.notifyItemInserted(viewModel.lines.size - 1)
         recyclerLog.post {
-            recyclerLog.scrollToPosition(lines.size - 1)
+            recyclerLog.scrollToPosition(viewModel.lines.size - 1)
         }
     }
 }

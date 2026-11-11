@@ -29,6 +29,14 @@
     public *;
 }
 
+# --- ViewModel -----------------------------------------------------------
+# ViewModelProvider создаёт экземпляр рефлексией по классу и конструктору:
+# без правила R8 может переименовать/удалить конструктор AndroidViewModel.
+-keep class by.quty.launch.core.viewmodel.** {
+    public <init>(android.app.Application);
+    public <init>(...);
+}
+
 # --- Enum-константы ------------------------------------------------------
 # Имена констант пишутся в SharedPreferences (фильтры логов) и читаются
 # обратно через LoggerLevelModel.valueOf(...). Переименование R8 сделало бы

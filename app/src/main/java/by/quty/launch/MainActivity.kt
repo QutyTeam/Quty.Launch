@@ -15,17 +15,16 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.toDrawable
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import by.quty.launch.api.router.ApiRouter
 import by.quty.launch.configs.ApiConfig
 import by.quty.launch.configs.CoreConfig
-import by.quty.launch.core.Core
 import by.quty.launch.core.managers.ApiPermissionGate
 import by.quty.launch.core.managers.LoggerManager
-import by.quty.launch.core.managers.ShellManager
-import by.quty.launch.core.managers.SystemUpdateManager
 import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.utilities.DialogBlurHelper
+import by.quty.launch.core.viewmodel.MainViewModel
 import by.quty.launch.core.webview.JsBridge
 import by.quty.launch.core.webview.LauncherWebView
 import kotlinx.coroutines.Dispatchers
@@ -39,22 +38,18 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * HOME-лаунчер + хост WebView с активной оболочкой.
  * Volume Down 1.5 сек при старте — Safe Mode.
+ *
+ * Состояние (ядро, менеджеры, флаги) живёт в [MainViewModel] и переживает
+ * пересоздание активности; здесь остаётся только View: WebView, диалоги,
+ * immersive-режим и перехват кнопок.
  */
 class MainActivity : BaseActivity() {
 
-    private lateinit var core: Core
+    /** Состояние и менеджеры, переживающие пересоздание активности. */
+    private lateinit var viewModel: MainViewModel
+
     private lateinit var webView: LauncherWebView
-    private lateinit var shellManager: ShellManager
     private lateinit var jsBridge: JsBridge
-    private lateinit var updateManager: SystemUpdateManager
-
-    private var lastAppliedLanguage: String? = null
-
-    private var lastAppliedAnimations: Boolean? = null
-
-    private var lastUpdateAvailable: Boolean = false
-
-    private var isAutoCheckRunning: Boolean = false
 
     // ===== Safe Mode: перехват Volume Down =====
 
@@ -73,7 +68,7 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    /** Инициализирует ядро, WebView, JsBridge, оболочку и авто-проверку обновлений. */
+    /** Инициализирует ViewModel, WebView, JsBridge, оболочку и авто-проверку обновлений. */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -98,15 +93,15 @@ class MainActivity : BaseActivity() {
             return
         }
 
-        shellManager = ShellManager(this, configManager)
-        applyOrientation(shellManager)
+        // Ядро и менеджеры живут в ViewModel: при пересоздании активности
+        // они не создаются заново и оболочка не распаковывается повторно.
+        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
-        core = Core(this)
+        applyOrientation(viewModel.shellManager)
+
         webView = LauncherWebView(applicationContext)
 
-        updateManager = SystemUpdateManager(this)
-
-        jsBridge = JsBridge(core, this)
+        jsBridge = JsBridge(viewModel.core, this)
         jsBridge.setWebView(webView)
         webView.addJavascriptInterface(jsBridge, "Android")
 
@@ -115,11 +110,7 @@ class MainActivity : BaseActivity() {
             requestApiPermission(shellName, methodName)
         }
 
-        lastAppliedLanguage = configManager.getLanguageCode()
-        lastAppliedAnimations = configManager.isEffectiveAnimationsEnabled()
-        lastUpdateAvailable = updateManager.getCachedUpdate()?.hasUpdate == true
-
-        webView.applyAnimationsEnabled(lastAppliedAnimations == true)
+        webView.applyAnimationsEnabled(viewModel.lastAppliedAnimations)
 
         loadShell()
         setContentView(webView)
@@ -306,11 +297,11 @@ class MainActivity : BaseActivity() {
     /** Загружает активную оболочку в WebView. */
     private fun loadShell() {
         lifecycleScope.launch {
-            val shellToActivate = shellManager.getShellToActivate()
-            // В Safe Mode Default загружается без записи в prefs — реальная оболочка сохраняется для возврата.
-            shellManager.setActiveShell(shellToActivate, persist = !configManager.isSafeModeActive())
+            // Активация оболочки — в ViewModel: там же живёт ShellManager,
+            // поэтому при пересоздании активности ZIP не распаковывается заново.
+            val shellToActivate = viewModel.activateShell()
 
-            applyOrientation(shellManager)
+            applyOrientation(viewModel.shellManager)
 
             LoggerManager.info(
                 LoggerTagModel.CORE,
@@ -322,7 +313,7 @@ class MainActivity : BaseActivity() {
                 isAsset = shellToActivate.isAsset
             )
 
-            webView.applyAnimationsEnabled(lastAppliedAnimations == true)
+            webView.applyAnimationsEnabled(viewModel.lastAppliedAnimations)
         }
     }
 
@@ -330,30 +321,30 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (::shellManager.isInitialized) {
-            applyOrientation(shellManager)
+        if (::viewModel.isInitialized) {
+            applyOrientation(viewModel.shellManager)
         } else {
             applyOrientation()
         }
 
-        if (::jsBridge.isInitialized && ::webView.isInitialized) {
+        if (::jsBridge.isInitialized && ::webView.isInitialized && ::viewModel.isInitialized) {
             val currentLang = configManager.getLanguageCode()
-            if (lastAppliedLanguage != null && lastAppliedLanguage != currentLang) {
+            if (viewModel.lastAppliedLanguage != currentLang) {
                 LoggerManager.info(
                     LoggerTagModel.CORE,
-                    "CORE.language  $lastAppliedLanguage > $currentLang"
+                    "CORE.language  ${viewModel.lastAppliedLanguage} > $currentLang"
                 )
-                lastAppliedLanguage = currentLang
+                viewModel.lastAppliedLanguage = currentLang
                 jsBridge.notifyCoreStateChanged()
             }
 
             val currentAnimations = configManager.isEffectiveAnimationsEnabled()
-            if (lastAppliedAnimations != currentAnimations) {
+            if (viewModel.lastAppliedAnimations != currentAnimations) {
                 LoggerManager.info(
                     LoggerTagModel.CORE,
-                    "CORE.animations  $lastAppliedAnimations > $currentAnimations"
+                    "CORE.animations  ${viewModel.lastAppliedAnimations} > $currentAnimations"
                 )
-                lastAppliedAnimations = currentAnimations
+                viewModel.lastAppliedAnimations = currentAnimations
                 webView.applyAnimationsEnabled(currentAnimations)
                 jsBridge.notifyCoreStateChanged()
             }
@@ -380,45 +371,19 @@ class MainActivity : BaseActivity() {
     // ФОНОВАЯ АВТО-ПРОВЕРКА ОБНОВЛЕНИЙ
     // ============================================================
 
-    /** Запускает фоновую авто-проверку обновлений, если пришло время. */
+    /**
+     * Запускает фоновую авто-проверку из ViewModel.
+     *
+     * Проверка идёт в viewModelScope: пересоздание активности её не отменяет
+     * и не запускает вторую параллельно (флаг хранится во ViewModel).
+     * Здесь остаётся только реакция View — уведомить оболочку.
+     */
     private fun maybeRunAutoUpdateCheck() {
-        if (!::updateManager.isInitialized) return
-        if (isAutoCheckRunning) return
-        if (!updateManager.shouldRunAutoCheck()) return
+        if (!::viewModel.isInitialized) return
 
-        isAutoCheckRunning = true
-
-        updateManager.setLastCheckTime(System.currentTimeMillis())
-
-        lifecycleScope.launch {
-            try {
-                val result = updateManager.checkForUpdates()
-                updateManager.setCachedUpdate(result)
-
-                val currentUpdateAvailable = result.hasUpdate
-                if (currentUpdateAvailable != lastUpdateAvailable) {
-                    lastUpdateAvailable = currentUpdateAvailable
-                    if (::jsBridge.isInitialized) {
-                        LoggerManager.info(
-                            LoggerTagModel.UPDATE,
-                            "UPDATE.auto  notify shell  hasUpdate=$currentUpdateAvailable"
-                        )
-                        jsBridge.notifyCoreStateChanged()
-                    }
-                }
-
-                LoggerManager.info(
-                    LoggerTagModel.UPDATE,
-                    "UPDATE.auto  done  hasUpdate=${result.hasUpdate}  error=${result.error ?: "—"}"
-                )
-            } catch (e: Exception) {
-                LoggerManager.error(
-                    LoggerTagModel.UPDATE,
-                    "UPDATE.auto  error  ${e.message ?: e.javaClass.simpleName}",
-                    e
-                )
-            } finally {
-                isAutoCheckRunning = false
+        viewModel.runAutoUpdateCheckIfNeeded {
+            if (::jsBridge.isInitialized) {
+                jsBridge.notifyCoreStateChanged()
             }
         }
     }

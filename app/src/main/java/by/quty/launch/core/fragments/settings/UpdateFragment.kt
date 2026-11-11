@@ -3,12 +3,8 @@ package by.quty.launch.core.fragments.settings
 
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageInfo
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,16 +20,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.LoggerManager
-import by.quty.launch.core.managers.StorageDirectory
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.managers.SystemUpdateManager
 import by.quty.launch.core.managers.VersionInfo
 import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.utilities.AppInfoHelper
+import by.quty.launch.core.viewmodel.UpdateViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -71,16 +70,37 @@ class UpdateFragment : Fragment() {
     private lateinit var autoCheckIntervalDivider: View
     private lateinit var autoCheckIntervalSpinner: Spinner
 
-    private lateinit var updateManager: SystemUpdateManager
-    private lateinit var storageManager: StorageManager
+    /**
+     * Состояние обновлений живёт во ViewModel: проверка, загрузка APK и выбранный
+     * локальный файл переживают пересоздание, загрузка не обрывается.
+     */
+    private lateinit var viewModel: UpdateViewModel
 
-    private var pendingVersionInfo: VersionInfo? = null
+    private val updateManager: SystemUpdateManager get() = viewModel.updateManager
+    private val storageManager: StorageManager get() = viewModel.storageManager
 
-    private var pendingApkUri: Uri? = null
+    private var pendingVersionInfo: VersionInfo?
+        get() = if (::viewModel.isInitialized) viewModel.pendingVersionInfo else null
+        set(value) {
+            if (::viewModel.isInitialized) viewModel.pendingVersionInfo = value
+        }
 
-    private var pendingLocalApkUri: Uri? = null
+    private var pendingApkUri: Uri?
+        get() = if (::viewModel.isInitialized) viewModel.pendingApkUri else null
+        set(value) {
+            if (::viewModel.isInitialized) viewModel.pendingApkUri = value
+        }
+
+    private var pendingLocalApkUri: Uri?
+        get() = if (::viewModel.isInitialized) viewModel.pendingLocalApkUri else null
+        set(value) {
+            if (::viewModel.isInitialized) viewModel.pendingLocalApkUri = value
+        }
 
     private var isSpinnerInitializing = false
+
+    /** Какое состояние загрузки уже отрисовано (чтобы не перерисовывать на каждый процент). */
+    private var lastRenderedDownload: UpdateViewModel.DownloadState? = null
 
     private val selectApkLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -107,8 +127,7 @@ class UpdateFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        storageManager = StorageManager(requireContext())
-        updateManager = SystemUpdateManager(requireContext())
+        viewModel = ViewModelProvider(this)[UpdateViewModel::class.java]
 
         initViews(view)
         setupUpdateCheck()
@@ -119,6 +138,13 @@ class UpdateFragment : Fragment() {
         if (cached?.hasUpdate == true && cached.versionInfo != null) {
             pendingVersionInfo = cached.versionInfo
             showUpdateStateAvailable(cached.versionInfo)
+        }
+
+        // Подписка на загрузку: после пересоздания экран снова видит актуальное состояние.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.downloadState.collect { state -> renderDownloadState(state) }
+            }
         }
     }
 
@@ -356,17 +382,14 @@ class UpdateFragment : Fragment() {
 
         showUpdateStateChecking()
 
-        lifecycleScope.launch {
-            val result = updateManager.checkForUpdates()
-
-            updateManager.setCachedUpdate(result)
+        viewModel.check { result ->
+            if (!isAdded) return@check
 
             if (result.hasUpdate && result.versionInfo != null) {
                 pendingVersionInfo = result.versionInfo
                 showUpdateStateAvailable(result.versionInfo)
             } else if (result.error != null) {
-                val errorMessage = resolveErrorMessage(result.error)
-                showUpdateStateError(errorMessage)
+                showUpdateStateError(resolveErrorMessage(result.error))
             } else {
                 showUpdateStateUpToDate()
             }
@@ -594,78 +617,75 @@ class UpdateFragment : Fragment() {
     /** Скачивает APK без установки. */
     private fun downloadApkOnly(versionInfo: VersionInfo) {
         showUpdateStateDownloading(versionInfo)
-
-        lifecycleScope.launch {
-            updateManager.downloadApk(versionInfo, object : SystemUpdateManager.DownloadListener {
-                override fun onProgress(percent: Int) {
-                    updateStateProgress.isIndeterminate = false
-                    updateStateProgress.progress = percent
-                    updateStateProgressText.text = getString(R.string.downloading_progress, percent)
-                }
-
-                override fun onSuccess(uri: Uri) {
-                    val fileName = "${CoreConfig.APK_FILE_PREFIX}-${versionInfo.version}.apk"
-                    val file = storageManager.get(StorageDirectory.UPDATES, fileName)
-                    showUpdateStateDownloadComplete(file.absolutePath, uri)
-                }
-
-                override fun onError(message: String) {
-                    showUpdateStateError(
-                        getString(R.string.download_error) + ": " + message
-                    )
-                }
-            })
-        }
+        viewModel.download(versionInfo, installAfter = false)
     }
 
     /** Скачивает APK и предлагает установить сразу. */
     private fun downloadAndInstall(versionInfo: VersionInfo) {
         showUpdateStateDownloading(versionInfo)
+        viewModel.download(versionInfo, installAfter = true)
+    }
 
-        lifecycleScope.launch {
-            updateManager.downloadApk(versionInfo, object : SystemUpdateManager.DownloadListener {
-                override fun onProgress(percent: Int) {
-                    updateStateProgress.isIndeterminate = false
-                    updateStateProgress.progress = percent
-                    updateStateProgressText.text = getString(R.string.downloading_progress, percent)
+    /** Отрисовывает состояние загрузки из ViewModel. */
+    private fun renderDownloadState(state: UpdateViewModel.DownloadState) {
+        if (!isAdded) return
+        if (state == lastRenderedDownload) return
+
+        val wasDownloading = lastRenderedDownload is UpdateViewModel.DownloadState.Downloading
+        lastRenderedDownload = state
+
+        when (state) {
+            is UpdateViewModel.DownloadState.Idle -> Unit
+
+            is UpdateViewModel.DownloadState.Downloading -> {
+                if (!wasDownloading) {
+                    showUpdateStateDownloading(viewModel.pendingVersionInfo)
                 }
 
-                override fun onSuccess(uri: Uri) {
-                    val fileName = "${CoreConfig.APK_FILE_PREFIX}-${versionInfo.version}.apk"
-                    val file = storageManager.get(StorageDirectory.UPDATES, fileName)
+                updateStateProgress.isIndeterminate = false
+                updateStateProgress.progress = state.percent
+                updateStateProgressText.text =
+                    getString(R.string.downloading_progress, state.percent)
+            }
 
-                    updateStateContainer.isVisible = true
-                    resetUpdateStateColors()
-                    updateStateIcon.setImageResource(R.drawable.ic_update_server_download_check)
-
-                    updateStateTitle.text = getString(R.string.install_title)
-                    setUpdateSubtitle(getString(R.string.update_state_version_label, versionInfo.version))
-
-                    updateStateDescription.text = getString(R.string.install_message)
-                    updateStateDescription.isVisible = true
-
-                    updateStateProgressContainer.isVisible = false
-                    updateStateProgressText.isVisible = false
-
-                    setUpdateActions(
-                        primaryText = getString(R.string.install_action),
-                        primaryAction = {
-                            updateManager.installApk(uri, versionInfo.versionCode)
-                        },
-                        secondaryText = getString(R.string.dialog_later),
-                        secondaryAction = {
-                            showUpdateStateDownloadComplete(file.absolutePath, uri)
-                        }
-                    )
+            is UpdateViewModel.DownloadState.Downloaded -> {
+                if (state.installAfter) {
+                    showUpdateStateInstallPrompt(state)
+                } else {
+                    showUpdateStateDownloadComplete(state.filePath, state.uri)
                 }
+            }
 
-                override fun onError(message: String) {
-                    showUpdateStateError(
-                        getString(R.string.download_error) + ": " + message
-                    )
-                }
-            })
+            is UpdateViewModel.DownloadState.Failed -> showUpdateStateError(state.message)
         }
+    }
+
+    /** Блок «Установить / позже» сразу после загрузки. */
+    private fun showUpdateStateInstallPrompt(state: UpdateViewModel.DownloadState.Downloaded) {
+        updateStateContainer.isVisible = true
+
+        resetUpdateStateColors()
+        updateStateIcon.setImageResource(R.drawable.ic_update_server_download_check)
+
+        updateStateTitle.text = getString(R.string.install_title)
+        setUpdateSubtitle(getString(R.string.update_state_version_label, state.version ?: ""))
+
+        updateStateDescription.text = getString(R.string.install_message)
+        updateStateDescription.isVisible = true
+
+        updateStateProgressContainer.isVisible = false
+        updateStateProgressText.isVisible = false
+
+        setUpdateActions(
+            primaryText = getString(R.string.install_action),
+            primaryAction = {
+                viewModel.install(state.uri, pendingVersionInfo?.versionCode)
+            },
+            secondaryText = getString(R.string.dialog_later),
+            secondaryAction = {
+                showUpdateStateDownloadComplete(state.filePath, state.uri)
+            }
+        )
     }
 
     // ============================================================
@@ -776,83 +796,15 @@ class UpdateFragment : Fragment() {
 
     /** Проверяет, что APK — наш, и показывает диалог установки. */
     private fun validateAndInstallApk(uri: Uri) {
-        lifecycleScope.launch {
-            try {
-                val packageInfo = getPackageInfoFromUri(uri)
+        viewModel.validateLocalApk(uri) { version, error ->
+            if (!isAdded) return@validateLocalApk
 
-                if (packageInfo == null) {
-                    showInstallStateError(getString(R.string.invalid_apk))
-                    return@launch
-                }
-
-                if (packageInfo.packageName != requireContext().packageName) {
-                    showInstallStateError(getString(R.string.apk_validation_failed))
-                    return@launch
-                }
-
-                val apkVersion = packageInfo.versionName ?: getString(R.string.version_unknown)
-                showInstallStateReady(uri, apkVersion)
-
-            } catch (_: Exception) {
-                showInstallStateError(getString(R.string.invalid_apk))
+            if (version == null || error != null) {
+                showInstallStateError(error ?: getString(R.string.invalid_apk))
+                return@validateLocalApk
             }
-        }
-    }
 
-    /** Возвращает PackageInfo из APK по URI. */
-    private fun getPackageInfoFromUri(uri: Uri): PackageInfo? {
-        return try {
-            val pm = requireContext().packageManager
-            val file = getFileFromUri(uri)
-            if (file != null && file.exists()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    pm.getPackageArchiveInfo(file.absolutePath, PackageManager.PackageInfoFlags.of(0))
-                } else {
-                    @Suppress("DEPRECATION")
-                    pm.getPackageArchiveInfo(file.absolutePath, 0)
-                }
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            LoggerManager.error(LoggerTagModel.UPDATE, "UPDATE.archive_info  error", e)
-            null
-        }
-    }
-
-    /** Конвертирует content:// URI в File (через DATA или копию в cache). */
-    private fun getFileFromUri(uri: Uri): File? {
-        return try {
-            val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val dataIndex = it.getColumnIndex(MediaStore.MediaColumns.DATA)
-                    val displayNameIndex = it.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME)
-
-                    if (dataIndex >= 0) {
-                        val path = it.getString(dataIndex)
-                        if (!path.isNullOrEmpty()) {
-                            return File(path)
-                        }
-                    }
-
-                    if (displayNameIndex >= 0) {
-                        val fileName = it.getString(displayNameIndex)
-                        if (!fileName.isNullOrEmpty()) {
-                            return File(requireContext().cacheDir, fileName).apply {
-                                requireContext().contentResolver.openInputStream(uri)?.use { input ->
-                                    outputStream().use { output ->
-                                        input.copyTo(output)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            null
-        } catch (_: Exception) {
-            null
+            showInstallStateReady(uri, version)
         }
     }
 

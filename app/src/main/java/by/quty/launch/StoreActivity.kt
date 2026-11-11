@@ -7,21 +7,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.adapters.SettingsMenuAdapter
 import by.quty.launch.core.fragments.store.StoreCatalogFragment
 import by.quty.launch.core.fragments.store.StoreImportFragment
 import by.quty.launch.core.fragments.store.StoreItemDetailFragment
 import by.quty.launch.core.fragments.store.StoreSettingsFragment
-import by.quty.launch.core.managers.ShellManager
-import by.quty.launch.core.managers.StoreManager
 import by.quty.launch.core.model.MenuModel
 import by.quty.launch.core.model.StoreItemModel
-import by.quty.launch.core.model.StoreRemoteItemModel
+import by.quty.launch.core.viewmodel.StoreViewModel
 import by.quty.launch.databinding.ActivityStoreBinding
-import kotlinx.coroutines.launch
 
 /**
  * Магазин: Каталог / Настройки / Импорт. На телефоне — переключение, на планшете — две панели.
@@ -35,8 +31,8 @@ class StoreActivity : BaseActivity() {
 
     private lateinit var binding: ActivityStoreBinding
 
-    private lateinit var shellManager: ShellManager
-    private lateinit var storeManager: StoreManager
+    /** Каталог и менеджеры живут в ViewModel и переживают пересоздание активности. */
+    private lateinit var viewModel: StoreViewModel
 
     private var isFragmentVisible = false
     private var isTabletMode = false
@@ -44,8 +40,9 @@ class StoreActivity : BaseActivity() {
 
     private var menuItems: List<MenuModel> = emptyList()
 
-    private var currentItems: List<StoreItemModel> = emptyList()
-    private var currentRemote: List<StoreRemoteItemModel> = emptyList()
+    /** Снимок каталога для синхронных обращений внутри активности. */
+    private val currentItems: List<StoreItemModel>
+        get() = if (::viewModel.isInitialized) viewModel.currentItems else emptyList()
 
     private val menuWidthPx: Int by lazy {
         (340 * resources.displayMetrics.density).toInt()
@@ -60,8 +57,7 @@ class StoreActivity : BaseActivity() {
         binding = ActivityStoreBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        shellManager = ShellManager(this, configManager)
-        storeManager = StoreManager(this)
+        viewModel = ViewModelProvider(this)[StoreViewModel::class.java]
 
         menuItems = buildMenuItems()
 
@@ -403,29 +399,21 @@ class StoreActivity : BaseActivity() {
     // ДАННЫЕ ДЛЯ ДЕТАЛЬНОГО ФРАГМЕНТА
     // ============================================================
 
-    /** Ищет элемент каталога по имени. */
+    /** Ищет элемент каталога по имени (состояние живёт во ViewModel). */
     fun findItemByName(name: String): StoreItemModel? {
-        return currentItems.find { it.name == name }
+        return viewModel.findByName(name)
     }
 
-    /** Пересобирает currentItems из кэша и локальных shell'ов. */
+    /**
+     * Пересобирает список из кэша каталога и локальных оболочек.
+     *
+     * Работа идёт в viewModelScope: пересоздание активности её не отменяет,
+     * а собранный список остаётся доступным. Колбэк вызывается, только если
+     * активность ещё жива (иначе View уже нет).
+     */
     fun refreshItems(onDone: (() -> Unit)? = null) {
-        lifecycleScope.launch {
-            if (isFinishing || isDestroyed) return@launch
-
-            val cached = storeManager.getCachedItems() ?: emptyList()
-            currentRemote = cached
-
-            currentItems = StoreManager.buildItems(
-                remote = cached,
-                localShells = shellManager.getAvailableShells(),
-                activeName = configManager.getActiveShell(),
-                activeVersion = configManager.getActiveShellVersion(),
-                safeShellName = if (configManager.isSafeModeActive()) CoreConfig.SAFE_MODE_SHELL else null
-            )
-
-            if (isFinishing || isDestroyed) return@launch
-
+        viewModel.refresh {
+            if (isFinishing || isDestroyed) return@refresh
             onDone?.invoke()
         }
     }

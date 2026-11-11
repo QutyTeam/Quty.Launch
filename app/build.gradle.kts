@@ -26,7 +26,7 @@ android {
         minSdk = 29
         //noinspection OldTargetApi
         targetSdk = 36
-    versionCode = 841
+    versionCode = 842
     versionName = "0.0.198"
         versionNameSuffix = "Alpha"
     }
@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     // Serialization
     implementation(libs.kotlinx.serialization.json)
