@@ -5,5 +5,5 @@
   "preview": "preview.png",
   "orientation": "sensor",
   "minQutyLaunchVersion": "0.0.0",
-  "apiMethods": ["GetCoreState", "GetApps", "LaunchApp"]
+  "apiMethods": ["GetAppState", "GetApps", "LaunchApp"]
 }

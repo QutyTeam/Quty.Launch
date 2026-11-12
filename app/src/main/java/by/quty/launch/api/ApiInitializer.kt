@@ -2,10 +2,11 @@
 package by.quty.launch.api
 
 import android.content.Context
+import by.quty.launch.api.methods.GetAppIcons
 import by.quty.launch.api.methods.GetApps
-import by.quty.launch.api.methods.GetCoreState
-import by.quty.launch.api.methods.GetStatusBar
-import by.quty.launch.api.methods.GetSystemInfo
+import by.quty.launch.api.methods.GetAppState
+import by.quty.launch.api.methods.GetDeviceStatus
+import by.quty.launch.api.methods.GetDeviceInfo
 import by.quty.launch.api.methods.LaunchApp
 import by.quty.launch.api.router.ApiRouter
 import by.quty.launch.core.managers.ConfigManager
@@ -23,11 +24,12 @@ object ApiInitializer {
         val shellManager = ShellManager(appContext, configManager)
 
         val methods = listOf(
-            GetSystemInfo(),
+            GetDeviceInfo(appContext),
             GetApps(appContext),
+            GetAppIcons(appContext),
             LaunchApp(appContext),
-            GetStatusBar(appContext),
-            GetCoreState(appContext, configManager, shellManager)
+            GetDeviceStatus(appContext),
+            GetAppState(appContext, configManager, shellManager)
         )
 
         methods.forEach { ApiRouter.register(it) }

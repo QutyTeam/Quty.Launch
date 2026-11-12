@@ -345,11 +345,12 @@
     <string name="api_methods_reset_done">Разрешения сброшены</string>
 
     <!-- Описания методов -->
-    <string name="api_getapps_desc">Список установленных приложений</string>
+    <string name="api_getapps_desc">Список установленных приложений (без иконок)</string>
+    <string name="api_getappicons_desc">Иконки приложений пакетами</string>
     <string name="api_launchapp_desc">Запуск приложения по пакету</string>
-    <string name="api_getstatusbar_desc">Сигнал сети, Wi-Fi, батарея</string>
-    <string name="api_getsysteminfo_desc">Информация об устройстве</string>
-    <string name="api_getcorestate_desc">Состояние ядра для оболочки</string>
+    <string name="api_getdevicestatus_desc">Сигнал сети, Wi-Fi, батарея</string>
+    <string name="api_getdeviceinfo_desc">Модель, версия Android, экран, локаль</string>
+    <string name="api_getappstate_desc">Состояние приложения: тема, язык, ориентация, оболочка</string>
 
     <!-- Имена виртуальных приложений (GetApps) -->
     <string name="api_getapps_logger_name">Логгер</string>

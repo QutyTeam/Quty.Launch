@@ -1,4 +1,4 @@
-// *** api/methods/GetStatusBar.kt *** //
+// *** api/methods/GetDeviceStatus.kt *** //
 package by.quty.launch.api.methods
 
 import by.quty.launch.R
@@ -16,7 +16,7 @@ import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 import by.quty.launch.api.base.BaseApiMethod
 import by.quty.launch.api.base.ApiResponse
-import by.quty.launch.api.model.StatusBarInfo
+import by.quty.launch.api.model.DeviceStatusInfo
 import by.quty.launch.configs.ApiConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,17 +27,17 @@ import java.util.Locale
 /**
  * Данные статус-бара: температура, скорость сети, громкость, сигнал, Wi-Fi, GPS, USB.
  */
-class GetStatusBar(
+class GetDeviceStatus(
     private val context: Context
 ) : BaseApiMethod<Unit>() {
 
-    override val name: String = "GetStatusBar"
+    override val name: String = "GetDeviceStatus"
 
     override val descriptionRes: Int
-        get() = R.string.api_getstatusbar_desc
+        get() = R.string.api_getdevicestatus_desc
 
     override val iconRes: Int
-        get() = R.drawable.ic_api_getstatusbar
+        get() = R.drawable.ic_api_getdevicestatus
 
     private var lastRxBytes = 0L
     private var lastTxBytes = 0L
@@ -70,7 +70,7 @@ class GetStatusBar(
 
     /** Собирает все данные статус-бара и сериализует в ответ. */
     override suspend fun executeInternal(params: Unit?): String = withContext(Dispatchers.IO) {
-        val status = StatusBarInfo(
+        val status = DeviceStatusInfo(
             cpuTemp = getAverageCpuTemp(),
             internetSpeed = getAverageInternetSpeed(),
             volume = getVolume(),
@@ -84,7 +84,7 @@ class GetStatusBar(
         )
 
         json.encodeToString(
-            ApiResponse.serializer(StatusBarInfo.serializer()),
+            ApiResponse.serializer(DeviceStatusInfo.serializer()),
             ApiResponse(success = true, data = status)
         )
     }

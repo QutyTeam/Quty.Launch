@@ -4,11 +4,6 @@ package by.quty.launch.api.methods
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
-import android.util.Base64
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import by.quty.launch.R
 import by.quty.launch.api.base.BaseApiMethod
 import by.quty.launch.api.base.ApiResponse
@@ -21,11 +16,13 @@ import by.quty.launch.core.utilities.BadgeHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
-import java.io.ByteArrayOutputStream
 import java.util.Locale
 
 /**
- * Список приложений (установленные + виртуальные) с иконками Base64.
+ * Список приложений (установленные + виртуальные) без иконок.
+ *
+ * Иконки отдаёт отдельный пакетный метод GetAppIcons: Base64-иконки всех приложений
+ * весили сотни килобайт и передавались через мост при каждом вызове.
  */
 class GetApps(
     private val context: Context
@@ -106,12 +103,10 @@ class GetApps(
             .getInstalledApplications(0)
             .filter { packageManager.getLaunchIntentForPackage(it.packageName) != null }
             .map { appInfo ->
-                val icon = packageManager.getApplicationIcon(appInfo.packageName)
                 AppInfo(
                     name = packageManager.getApplicationLabel(appInfo).toString(),
                     packageName = appInfo.packageName,
-                    isCustom = false,
-                    iconBase64 = drawableToBase64(icon)
+                    isCustom = false
                 )
             }
             .sortedBy { it.name }
@@ -126,54 +121,38 @@ class GetApps(
         val showTerminal = devMode && developerPrefs.getBoolean(KEY_SHOW_TERMINAL, false)
         val showLogger = devMode && developerPrefs.getBoolean(KEY_SHOW_LOGGER, false)
 
-        val settingsIcon = ContextCompat.getDrawable(context, R.drawable.ic_app_settings)
-        val settingsIconBase64 = settingsIcon?.let { drawableToBase64(it) }
-
         customApps.add(
             AppInfo(
                 name = localizedContext.getString(R.string.api_getapps_settings_name),
                 packageName = ApiConfig.SETTINGS_PACKAGE,
-                isCustom = true,
-                iconBase64 = settingsIconBase64
+                isCustom = true
             )
         )
-
-        val storeIcon = ContextCompat.getDrawable(context, R.drawable.ic_app_store)
-        val storeIconBase64 = storeIcon?.let { drawableToBase64(it) }
 
         customApps.add(
             AppInfo(
                 name = localizedContext.getString(R.string.api_getapps_store_name),
                 packageName = ApiConfig.STORE_PACKAGE,
-                isCustom = true,
-                iconBase64 = storeIconBase64
+                isCustom = true
             )
         )
 
         if (showTerminal) {
-            val terminalIcon = ContextCompat.getDrawable(context, R.drawable.ic_app_terminal)
-            val terminalIconBase64 = terminalIcon?.let { drawableToBase64(it) }
-
             customApps.add(
                 AppInfo(
                     name = localizedContext.getString(R.string.api_getapps_terminal_name),
                     packageName = ApiConfig.TERMINAL_PACKAGE,
-                    isCustom = true,
-                    iconBase64 = terminalIconBase64
+                    isCustom = true
                 )
             )
         }
 
         if (showLogger) {
-            val loggerIcon = ContextCompat.getDrawable(context, R.drawable.ic_app_logger)
-            val loggerIconBase64 = loggerIcon?.let { drawableToBase64(it) }
-
             customApps.add(
                 AppInfo(
                     name = localizedContext.getString(R.string.api_getapps_logger_name),
                     packageName = ApiConfig.LOGGER_PACKAGE,
-                    isCustom = true,
-                    iconBase64 = loggerIconBase64
+                    isCustom = true
                 )
             )
         }
@@ -196,24 +175,6 @@ class GetApps(
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
         return context.createConfigurationContext(config)
-    }
-
-    /** Конвертирует Drawable в Base64 PNG (NO_WRAP). */
-    private fun drawableToBase64(drawable: Drawable): String? {
-        return try {
-            val bitmap = drawable.toBitmap(
-                width = 96,
-                height = 96,
-                config = Bitmap.Config.ARGB_8888
-            )
-
-            val outputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            val byteArray = outputStream.toByteArray()
-            Base64.encodeToString(byteArray, Base64.NO_WRAP)
-        } catch (_: Exception) {
-            null
-        }
     }
 
     companion object {

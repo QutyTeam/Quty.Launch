@@ -7,5 +7,5 @@
     "telegram": "https://t.me/QutyLaunch/110",
     "version": "0.0.1",
     "minQutyLaunchVersion": "0.0.0",
-    "apiMethods": ["GetApps", "LaunchApp", "GetStatusBar"]
+    "apiMethods": ["GetApps", "LaunchApp", "GetDeviceStatus"]
 }

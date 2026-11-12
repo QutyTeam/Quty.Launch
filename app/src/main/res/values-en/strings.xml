@@ -345,11 +345,12 @@
     <string name="api_methods_reset_done">Permissions reset</string>
 
     <!-- Method descriptions -->
-    <string name="api_getapps_desc">List of installed apps</string>
+    <string name="api_getapps_desc">List of installed apps (without icons)</string>
+    <string name="api_getappicons_desc">App icons in batches</string>
     <string name="api_launchapp_desc">Launch app by package name</string>
-    <string name="api_getstatusbar_desc">Network signal, Wi-Fi, battery</string>
-    <string name="api_getsysteminfo_desc">Device information</string>
-    <string name="api_getcorestate_desc">Core state for shell</string>
+    <string name="api_getdevicestatus_desc">Network signal, Wi-Fi, battery</string>
+    <string name="api_getdeviceinfo_desc">Model, Android version, screen, locale</string>
+    <string name="api_getappstate_desc">App state: theme, language, orientation, shell</string>
 
     <!-- Virtual app names (GetApps) -->
     <string name="api_getapps_logger_name">Logger</string>

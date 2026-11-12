@@ -1,4 +1,4 @@
-// *** api/methods/GetCoreState.kt *** //
+// *** api/methods/GetAppState.kt *** //
 package by.quty.launch.api.methods
 
 import android.content.Context
@@ -7,8 +7,8 @@ import by.quty.launch.R
 import by.quty.launch.api.base.BaseApiMethod
 import by.quty.launch.api.base.ApiResponse
 import by.quty.launch.api.model.ColorSchemeInfo
-import by.quty.launch.api.model.CoreAppInfo
-import by.quty.launch.api.model.CoreStateInfo
+import by.quty.launch.api.model.AppVersionInfo
+import by.quty.launch.api.model.AppStateInfo
 import by.quty.launch.api.model.ShellInfo
 import by.quty.launch.core.managers.ConfigManager
 import by.quty.launch.core.managers.ShellManager
@@ -19,19 +19,19 @@ import by.quty.launch.core.utilities.BadgeHelper
 /**
  * Полное состояние ядра для оболочки (тема, язык, ориентация, shell, update).
  */
-class GetCoreState(
+class GetAppState(
     private val context: Context,
     private val configManager: ConfigManager,
     private val shellManager: ShellManager
 ) : BaseApiMethod<Unit>() {
 
-    override val name: String = "GetCoreState"
+    override val name: String = "GetAppState"
 
     override val descriptionRes: Int
-        get() = R.string.api_getcorestate_desc
+        get() = R.string.api_getappstate_desc
 
     override val iconRes: Int
-        get() = R.drawable.ic_api_getcorestate
+        get() = R.drawable.ic_api_getappstate
 
     /** Параметров нет. */
     override fun parseParams(jsonString: String) = Unit
@@ -60,7 +60,7 @@ class GetCoreState(
             updateBadgeHex = null
         }
 
-        val coreState = CoreStateInfo(
+        val appState = AppStateInfo(
             theme = resolveTheme(themeMode),
             themeMode = themeMode,
             language = configManager.getLanguageCode(),
@@ -87,15 +87,15 @@ class GetCoreState(
                     orientation = shell.orientation
                 )
             },
-            app = CoreAppInfo(
+            app = AppVersionInfo(
                 version = AppInfoHelper.getVersionName(context),
                 versionCode = AppInfoHelper.getVersionCode(context)
             )
         )
 
         return json.encodeToString(
-            ApiResponse.serializer(CoreStateInfo.serializer()),
-            ApiResponse(success = true, data = coreState)
+            ApiResponse.serializer(AppStateInfo.serializer()),
+            ApiResponse(success = true, data = appState)
         )
     }
 
