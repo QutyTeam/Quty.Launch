@@ -6,7 +6,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import by.quty.launch.core.managers.TerminalManager
-import by.quty.launch.core.model.TerminalExecutionResult
+import by.quty.launch.core.model.TerminalExecutionResultModel
 import by.quty.launch.core.model.TerminalLineModel
 import kotlinx.coroutines.launch
 
@@ -48,7 +48,7 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
     fun execute(
         context: Context,
         command: TerminalManager.ParsedCommand,
-        onResult: (TerminalExecutionResult) -> Unit
+        onResult: (TerminalExecutionResultModel) -> Unit
     ) {
         if (isExecuting) return
         isExecuting = true

@@ -58,8 +58,7 @@ object IntegrityHelper {
     /** true, если хеш задан и это корректный SHA-256 в hex. */
     fun isValid(raw: String?): Boolean {
         val normalized = normalize(raw) ?: return false
-        if (normalized.length != SHA256_HEX_LENGTH) return false
-        return normalized.all { it in '0'..'9' || it in 'a'..'f' }
+        return normalized.length == SHA256_HEX_LENGTH && normalized.all { it in '0'..'9' || it in 'a'..'f' }
     }
 
     /** Считает SHA-256 файла (hex, нижний регистр). null — если файл не читается. */

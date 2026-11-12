@@ -3,6 +3,7 @@ package by.quty.launch.core.webview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.webkit.ConsoleMessage
 import android.webkit.RenderProcessGoneDetail
@@ -13,7 +14,6 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
-import by.quty.launch.BuildConfig
 import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.LoggerManager
@@ -80,10 +80,20 @@ class LauncherWebView(context: Context) : WebView(context.applicationContext) {
         setLayerType(LAYER_TYPE_HARDWARE, null)
 
         // Отладка по chrome://inspect даёт полный доступ к JS-мосту, только для debug.
-        setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+        setWebContentsDebuggingEnabled(isDebuggable())
 
         setupAssetLoader()
         setupWebChromeClient()
+    }
+
+    /**
+     * true, если сборка debuggable.
+     * Раньше здесь был BuildConfig.DEBUG: тот же смысл, но без зависимости
+     * от сгенерированного класса в WebView-хосте.
+     */
+    private fun isDebuggable(): Boolean {
+        val flags = appContext.applicationInfo.flags
+        return (flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
 
     /** WebChromeClient без перехвата console.log. */

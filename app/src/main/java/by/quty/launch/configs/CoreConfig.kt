@@ -167,10 +167,10 @@ object CoreConfig {
     // ============================================================
 
     /** URL подписи каталога магазина (base64, RSA-3072 + SHA-256). */
-    const val STORE_SIGNATURE_URL = STORE_URL + ".sig"
+    const val STORE_SIGNATURE_URL = "$STORE_URL.sig"
 
     /** URL подписи манифеста обновлений (base64, RSA-3072 + SHA-256). */
-    const val UPDATE_SIGNATURE_URL = UPDATE_SERVER_URL + ".sig"
+    const val UPDATE_SIGNATURE_URL = "$UPDATE_SERVER_URL.sig"
 
     /**
      * Закреплённый публичный ключ подписи каталога и манифеста обновлений

@@ -2,6 +2,7 @@
 package by.quty.launch.core.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import by.quty.launch.configs.CoreConfig
@@ -26,7 +27,12 @@ import kotlinx.coroutines.launch
  */
 class StoreViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val context = application.applicationContext
+    /**
+     * Контекст приложения. Не храним в поле: lint видит такое поле как утечку
+     * (StaticFieldLeak), хотя applicationContext безопасен. Геттер поля не создаёт.
+     */
+    private val context: Context
+        get() = getApplication<Application>().applicationContext
 
     /** Конфигурация: активная оболочка, версия, Safe Mode. */
     val configManager = ConfigManager(context)

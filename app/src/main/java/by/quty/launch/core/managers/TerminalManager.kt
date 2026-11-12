@@ -16,7 +16,7 @@ import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.model.ColorSchemeModel
 import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.model.TerminalCommandModel
-import by.quty.launch.core.model.TerminalExecutionResult
+import by.quty.launch.core.model.TerminalExecutionResultModel
 import by.quty.launch.core.model.TerminalSegmentModel
 import by.quty.launch.core.utilities.AppInfoHelper
 import by.quty.launch.core.utilities.FormatterHelper
@@ -74,28 +74,28 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_version_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(versionHandler(context)) }
+                handler = { TerminalExecutionResultModel(versionHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "status",
                 descriptionRes = R.string.terminal_cmd_status_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(statusHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(statusHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "clear",
                 descriptionRes = R.string.terminal_cmd_clear_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult("") }
+                handler = { TerminalExecutionResultModel("") }
             ),
             TerminalCommandModel(
                 name = "exit",
                 descriptionRes = R.string.terminal_cmd_exit_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult("") }
+                handler = { TerminalExecutionResultModel("") }
             ),
 
             // ===== Информация о ядре =====
@@ -104,70 +104,70 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_about_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(aboutHandler(context)) }
+                handler = { TerminalExecutionResultModel(aboutHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "device",
                 descriptionRes = R.string.terminal_cmd_device_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(deviceHandler(context)) }
+                handler = { TerminalExecutionResultModel(deviceHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "shell.info",
                 descriptionRes = R.string.terminal_cmd_shell_info_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(shellInfoHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(shellInfoHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "shell.list",
                 descriptionRes = R.string.terminal_cmd_shell_list_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(shellListHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(shellListHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "theme",
                 descriptionRes = R.string.terminal_cmd_theme_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(themeHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(themeHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "lang",
                 descriptionRes = R.string.terminal_cmd_lang_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(langHandler(configManager)) }
+                handler = { TerminalExecutionResultModel(langHandler(configManager)) }
             ),
             TerminalCommandModel(
                 name = "orientation",
                 descriptionRes = R.string.terminal_cmd_orientation_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(orientationHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(orientationHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "orientation.lock",
                 descriptionRes = R.string.terminal_cmd_orientation_lock_desc,
                 requireDevMode = true,
                 isWrite = false,
-                handler = { TerminalExecutionResult(orientationLockHandler(context)) }
+                handler = { TerminalExecutionResultModel(orientationLockHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "devmode",
                 descriptionRes = R.string.terminal_cmd_devmode_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(devModeHandler(context)) }
+                handler = { TerminalExecutionResultModel(devModeHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "storage",
                 descriptionRes = R.string.terminal_cmd_storage_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(storageHandler(context)) }
+                handler = { TerminalExecutionResultModel(storageHandler(context)) }
             ),
 
             // ===== Время и обновления =====
@@ -176,14 +176,14 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_time_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(timeHandler()) }
+                handler = { TerminalExecutionResultModel(timeHandler()) }
             ),
             TerminalCommandModel(
                 name = "updates",
                 descriptionRes = R.string.terminal_cmd_updates_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(updatesHandler(context)) }
+                handler = { TerminalExecutionResultModel(updatesHandler(context)) }
             ),
 
             // ===== Диагностика =====
@@ -192,42 +192,42 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_doctor_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(doctorHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(doctorHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "memory",
                 descriptionRes = R.string.terminal_cmd_memory_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(memoryHandler()) }
+                handler = { TerminalExecutionResultModel(memoryHandler()) }
             ),
             TerminalCommandModel(
                 name = "webview",
                 descriptionRes = R.string.terminal_cmd_webview_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(webViewHandler(context)) }
+                handler = { TerminalExecutionResultModel(webViewHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "screen",
                 descriptionRes = R.string.terminal_cmd_screen_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(screenHandler(context)) }
+                handler = { TerminalExecutionResultModel(screenHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "bench",
                 descriptionRes = R.string.terminal_cmd_bench_desc,
                 requireDevMode = true,
                 isWrite = false,
-                handler = { TerminalExecutionResult(benchHandler(context, it)) }
+                handler = { TerminalExecutionResultModel(benchHandler(context, it)) }
             ),
             TerminalCommandModel(
                 name = "bench.all",
                 descriptionRes = R.string.terminal_cmd_bench_all_desc,
                 requireDevMode = true,
                 isWrite = false,
-                handler = { TerminalExecutionResult(benchAllHandler(context, it)) }
+                handler = { TerminalExecutionResultModel(benchAllHandler(context, it)) }
             ),
 
             // ===== API =====
@@ -236,14 +236,14 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_api_list_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(apiListHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(apiListHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "api.call",
                 descriptionRes = R.string.terminal_cmd_api_call_desc,
                 requireDevMode = true,
                 isWrite = false,
-                handler = { TerminalExecutionResult(apiCallHandler(context, it)) }
+                handler = { TerminalExecutionResultModel(apiCallHandler(context, it)) }
             ),
 
             // ===== Служебные для тестов =====
@@ -252,7 +252,7 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_echo_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(echoHandler(it)) }
+                handler = { TerminalExecutionResultModel(echoHandler(it)) }
             ),
 
             // ===== История =====
@@ -261,14 +261,14 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_history_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(historyHandler(context, it)) }
+                handler = { TerminalExecutionResultModel(historyHandler(context, it)) }
             ),
             TerminalCommandModel(
                 name = "history.clear",
                 descriptionRes = R.string.terminal_cmd_history_clear_desc,
                 requireDevMode = false,
                 isWrite = false,
-                handler = { TerminalExecutionResult(historyClearHandler(context)) }
+                handler = { TerminalExecutionResultModel(historyClearHandler(context)) }
             ),
 
             // ===== Управление состоянием (write, DevMode) =====
@@ -277,56 +277,56 @@ object TerminalManager {
                 descriptionRes = R.string.terminal_cmd_set_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(setHandler(context, it)) }
+                handler = { TerminalExecutionResultModel(setHandler(context, it)) }
             ),
             TerminalCommandModel(
                 name = "shell.apply",
                 descriptionRes = R.string.terminal_cmd_shell_apply_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(shellApplyHandler(context, configManager, it)) }
+                handler = { TerminalExecutionResultModel(shellApplyHandler(context, configManager, it)) }
             ),
             TerminalCommandModel(
                 name = "safemode",
                 descriptionRes = R.string.terminal_cmd_safemode_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(safeModeHandler(context, configManager, it)) }
+                handler = { TerminalExecutionResultModel(safeModeHandler(context, configManager, it)) }
             ),
             TerminalCommandModel(
                 name = "reload.shell",
                 descriptionRes = R.string.terminal_cmd_reload_shell_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(reloadShellHandler(context, configManager)) }
+                handler = { TerminalExecutionResultModel(reloadShellHandler(context, configManager)) }
             ),
             TerminalCommandModel(
                 name = "clear.webview",
                 descriptionRes = R.string.terminal_cmd_clear_webview_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(clearWebViewHandler(context)) }
+                handler = { TerminalExecutionResultModel(clearWebViewHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "clear.cache",
                 descriptionRes = R.string.terminal_cmd_clear_cache_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(clearCacheHandler()) }
+                handler = { TerminalExecutionResultModel(clearCacheHandler()) }
             ),
             TerminalCommandModel(
                 name = "reset.onboarding",
                 descriptionRes = R.string.terminal_cmd_reset_onboarding_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(resetOnboardingHandler(context)) }
+                handler = { TerminalExecutionResultModel(resetOnboardingHandler(context)) }
             ),
             TerminalCommandModel(
                 name = "restart",
                 descriptionRes = R.string.terminal_cmd_restart_desc,
                 requireDevMode = true,
                 isWrite = true,
-                handler = { TerminalExecutionResult(restartHandler(context)) }
+                handler = { TerminalExecutionResultModel(restartHandler(context)) }
             )
         )
     }
@@ -373,15 +373,15 @@ object TerminalManager {
     }
 
     /** Выполняет команду. Все ошибки возвращаются с префиксом "!". */
-    suspend fun execute(context: Context, parsed: ParsedCommand): TerminalExecutionResult {
+    suspend fun execute(context: Context, parsed: ParsedCommand): TerminalExecutionResultModel {
         val commands = getCommands(context)
         val command = commands.find { it.name == parsed.name }
-            ?: return TerminalExecutionResult(
+            ?: return TerminalExecutionResultModel(
                 errorMessage(context.getString(R.string.terminal_error_unknown_command, parsed.name))
             )
 
         if (command.requireDevMode && !isDevModeEnabled(context)) {
-            return TerminalExecutionResult(
+            return TerminalExecutionResultModel(
                 errorMessage(context.getString(R.string.terminal_error_devmode_required))
             )
         }
@@ -389,7 +389,7 @@ object TerminalManager {
         return try {
             command.handler(parsed.args)
         } catch (e: Exception) {
-            TerminalExecutionResult(
+            TerminalExecutionResultModel(
                 errorMessage(
                     context.getString(R.string.terminal_error_execution, e.message ?: "Unknown error")
                 )
@@ -412,13 +412,13 @@ object TerminalManager {
     // ============================================================
 
     /** Справка: список команд с сегментами (имя — акцентом, описание — dim). */
-    private fun helpHandler(context: Context, args: List<String>): TerminalExecutionResult {
+    private fun helpHandler(context: Context, args: List<String>): TerminalExecutionResultModel {
         val commands = getCommands(context)
 
         if (args.isNotEmpty()) {
             val targetName = args.first()
             val target = commands.find { it.name == targetName }
-                ?: return TerminalExecutionResult(
+                ?: return TerminalExecutionResultModel(
                     errorMessage(context.getString(R.string.terminal_error_unknown_command, targetName))
                 )
 
@@ -431,7 +431,7 @@ object TerminalManager {
                 TerminalSegmentModel(0, nameEnd, TerminalSegmentModel.Kind.COMMAND_NAME)
             )
 
-            return TerminalExecutionResult(text, segments)
+            return TerminalExecutionResultModel(text, segments)
         }
 
         val sb = StringBuilder()
@@ -474,7 +474,7 @@ object TerminalManager {
         val text = sb.toString().trimEnd()
         val validSegments = segments.filter { it.end <= text.length }
 
-        return TerminalExecutionResult(text, validSegments)
+        return TerminalExecutionResultModel(text, validSegments)
     }
 
     /** about: версия, автор, ссылки. */

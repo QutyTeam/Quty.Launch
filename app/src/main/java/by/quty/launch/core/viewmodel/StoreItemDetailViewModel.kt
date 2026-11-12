@@ -2,14 +2,17 @@
 package by.quty.launch.core.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import by.quty.launch.R
 import by.quty.launch.core.managers.ConfigManager
+import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.Shell
 import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.managers.StoreManager
+import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.model.StoreItemModel
 import kotlinx.coroutines.launch
 
@@ -22,7 +25,12 @@ import kotlinx.coroutines.launch
  */
 class StoreItemDetailViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val context = application.applicationContext
+    /**
+     * Контекст приложения. Не храним в поле: lint видит такое поле как утечку
+     * (StaticFieldLeak), хотя applicationContext безопасен. Геттер поля не создаёт.
+     */
+    private val context: Context
+        get() = getApplication<Application>().applicationContext
 
     val configManager = ConfigManager(context)
     val shellManager = ShellManager(context, configManager)
@@ -87,22 +95,36 @@ class StoreItemDetailViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
-    /** Делает оболочку активной. */
+    /**
+     * Делает оболочку активной.
+     *
+     * Флаг [isProcessing] ставит и снимает сама ViewModel, причём снимает ДО
+     * колбэка: иначе экран перерисовывался с флагом «идёт обработка» и меню
+     * скрывалось. Раньше экран ещё и выставлял флаг до вызова — из-за проверки
+     * в начале метода «Применить» вообще никогда не срабатывало.
+     */
     fun apply(
         target: StoreItemModel,
         onDone: (shell: Shell?) -> Unit
     ) {
         if (isProcessing) return
+        isProcessing = true
 
         viewModelScope.launch {
-            val available = shellManager.getAvailableShells().find { it.name == target.name }
-
-            if (available == null) {
-                onDone(null)
-                return@launch
+            val available = try {
+                val shell = shellManager.getAvailableShells().find { it.name == target.name }
+                shell?.also { shellManager.setActiveShell(it) }
+            } catch (e: Exception) {
+                LoggerManager.error(
+                    LoggerTagModel.SHELL,
+                    "SHELL.apply  error  ${target.name}  ${e.message ?: e.javaClass.simpleName}",
+                    e
+                )
+                null
+            } finally {
+                isProcessing = false
             }
 
-            shellManager.setActiveShell(available)
             onDone(available)
         }
     }

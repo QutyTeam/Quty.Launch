@@ -2,6 +2,7 @@
 package by.quty.launch.core.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -32,7 +33,12 @@ import java.io.File
  */
 class UpdateViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val context = application.applicationContext
+    /**
+     * Контекст приложения. Не храним в поле: lint видит такое поле как утечку
+     * (StaticFieldLeak), хотя applicationContext безопасен. Геттер поля не создаёт.
+     */
+    private val context: Context
+        get() = getApplication<Application>().applicationContext
 
     val updateManager = SystemUpdateManager(context)
     val storageManager = StorageManager(context)

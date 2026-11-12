@@ -123,17 +123,9 @@ object ApiRouter {
     /** Имя активной оболочки (null, если контекст не установлен). */
     fun getShellName(): String? = activeShellName
 
-    /** Методы, заявленные активной оболочкой. */
-    fun getDeclaredMethods(): Set<String> = declaredMethods
-
     /** true, если метод заявлен в манифесте активной оболочки. */
     fun isDeclared(methodName: String): Boolean {
         return methodName in declaredMethods
-    }
-
-    /** true, если метод зарегистрирован в ядре. */
-    fun hasMethod(methodName: String): Boolean {
-        return methods.containsKey(methodName)
     }
 
     /** Обрезает params для краткого message. */

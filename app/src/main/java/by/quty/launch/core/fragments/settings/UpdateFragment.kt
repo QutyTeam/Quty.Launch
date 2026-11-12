@@ -27,14 +27,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import by.quty.launch.R
 import by.quty.launch.configs.CoreConfig
 import by.quty.launch.core.managers.LoggerManager
-import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.managers.SystemUpdateManager
 import by.quty.launch.core.managers.VersionInfo
 import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.utilities.AppInfoHelper
 import by.quty.launch.core.viewmodel.UpdateViewModel
 import kotlinx.coroutines.launch
-import java.io.File
 
 /**
  * «Центр обновления»: онлайн-проверка, локальная установка APK, авто-проверка.
@@ -77,7 +75,6 @@ class UpdateFragment : Fragment() {
     private lateinit var viewModel: UpdateViewModel
 
     private val updateManager: SystemUpdateManager get() = viewModel.updateManager
-    private val storageManager: StorageManager get() = viewModel.storageManager
 
     private var pendingVersionInfo: VersionInfo?
         get() = if (::viewModel.isInitialized) viewModel.pendingVersionInfo else null

@@ -23,10 +23,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import by.quty.launch.R
 import by.quty.launch.StoreActivity
-import by.quty.launch.core.managers.ConfigManager
-import by.quty.launch.core.managers.ShellManager
 import by.quty.launch.core.managers.StorageDirectory
-import by.quty.launch.core.managers.StoreManager
 import by.quty.launch.core.managers.StorageManager
 import by.quty.launch.core.model.StoreItemModel
 import by.quty.launch.core.utilities.PopupMenuHelper
@@ -73,9 +70,6 @@ class StoreItemDetailFragment : Fragment() {
             if (::viewModel.isInitialized) viewModel.isProcessing = value
         }
 
-    private val configManager: ConfigManager get() = viewModel.configManager
-    private val shellManager: ShellManager get() = viewModel.shellManager
-    private val storeManager: StoreManager get() = viewModel.storeManager
     private val storageManager: StorageManager get() = viewModel.storageManager
 
     private lateinit var previewImage: ImageView
@@ -510,15 +504,12 @@ class StoreItemDetailFragment : Fragment() {
         )
     }
 
-    /** Сделать активной. */
+    /** Сделать активной (флагом обработки владеет ViewModel). */
     private fun applyItem(item: StoreItemModel) {
         if (isProcessing) return
-        isProcessing = true
 
         viewModel.apply(item) { availableShell ->
             if (!isAdded) return@apply
-
-            isProcessing = false
 
             if (availableShell == null) {
                 updateActionUI(item)
