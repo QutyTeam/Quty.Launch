@@ -16,6 +16,7 @@ import by.quty.launch.core.fragments.store.StoreItemDetailFragment
 import by.quty.launch.core.fragments.store.StoreSettingsFragment
 import by.quty.launch.core.model.MenuModel
 import by.quty.launch.core.model.StoreItemModel
+import by.quty.launch.core.model.StoreRemoteItemModel
 import by.quty.launch.core.viewmodel.StoreViewModel
 import by.quty.launch.databinding.ActivityStoreBinding
 
@@ -402,6 +403,22 @@ class StoreActivity : BaseActivity() {
     /** Ищет элемент каталога по имени (состояние живёт во ViewModel). */
     fun findItemByName(name: String): StoreItemModel? {
         return viewModel.findByName(name)
+    }
+
+    /**
+     * Принимает свежий каталог с сервера.
+     *
+     * Нужен, чтобы список и детальный экран видели одни и те же данные: иначе
+     * открытый детальный экран показывал устаревшую версию и не предлагал
+     * «Обновить» для оболочки, у которой на сервере вышла новая версия.
+     */
+    fun updateRemoteItems(remote: List<StoreRemoteItemModel>) {
+        viewModel.setRemoteItems(remote) {
+            if (isFinishing || isDestroyed) return@setRemoteItems
+
+            val current = supportFragmentManager.findFragmentById(R.id.fragment_container)
+            (current as? StoreItemDetailFragment)?.onCatalogUpdated()
+        }
     }
 
     /**

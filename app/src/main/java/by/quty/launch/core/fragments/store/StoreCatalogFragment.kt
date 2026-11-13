@@ -272,6 +272,10 @@ class StoreCatalogFragment : Fragment() {
             }
 
             if (result != null) {
+                // Сначала отдаём свежий каталог активности (единый источник данных
+                // для списка и детального экрана), затем рендерим свой список.
+                (activity as? StoreActivity)?.updateRemoteItems(result)
+
                 rebuildFromData(result)
                 isCacheShown = true
                 swipeRefresh.isEnabled = true

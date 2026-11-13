@@ -62,23 +62,46 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun refresh(onDone: ((List<StoreItemModel>) -> Unit)? = null) {
         viewModelScope.launch {
-            remoteItems = storeManager.getCachedItems() ?: emptyList()
+            val cached = storeManager.getCachedItems() ?: emptyList()
+            remoteItems = cached
 
-            val built = StoreManager.buildItems(
-                remote = remoteItems,
-                localShells = shellManager.getAvailableShells(),
-                activeName = configManager.getActiveShell(),
-                activeVersion = configManager.getActiveShellVersion(),
-                safeShellName = if (configManager.isSafeModeActive()) {
-                    CoreConfig.SAFE_MODE_SHELL
-                } else {
-                    null
-                }
-            )
-
+            val built = buildItems(cached)
             _items.value = built
             onDone?.invoke(built)
         }
+    }
+
+    /**
+     * Принимает свежий каталог с сервера и пересобирает список.
+     *
+     * Раньше каталог с сети загружал только StoreCatalogFragment, а список и
+     * детальный экран читали кэш: если на сервере вышла новая версия оболочки,
+     * у детального экрана оставался старый каталог, и пункт «Обновить» не
+     * появлялся до следующего перезапуска активности — в том числе у применённой
+     * оболочки.
+     */
+    fun setRemoteItems(remote: List<StoreRemoteItemModel>, onDone: (() -> Unit)? = null) {
+        remoteItems = remote
+
+        viewModelScope.launch {
+            _items.value = buildItems(remote)
+            onDone?.invoke()
+        }
+    }
+
+    /** Собирает элементы магазина из удалённого каталога и локальных оболочек. */
+    private fun buildItems(remote: List<StoreRemoteItemModel>): List<StoreItemModel> {
+        return StoreManager.buildItems(
+            remote = remote,
+            localShells = shellManager.getAvailableShells(),
+            activeName = configManager.getActiveShell(),
+            activeVersion = configManager.getActiveShellVersion(),
+            safeShellName = if (configManager.isSafeModeActive()) {
+                CoreConfig.SAFE_MODE_SHELL
+            } else {
+                null
+            }
+        )
     }
 
     /** Элемент каталога по имени оболочки. */

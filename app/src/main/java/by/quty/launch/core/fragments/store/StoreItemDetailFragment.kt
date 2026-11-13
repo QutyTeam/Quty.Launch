@@ -23,8 +23,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import by.quty.launch.R
 import by.quty.launch.StoreActivity
+import by.quty.launch.core.managers.LoggerManager
 import by.quty.launch.core.managers.StorageDirectory
 import by.quty.launch.core.managers.StorageManager
+import by.quty.launch.core.model.LoggerTagModel
 import by.quty.launch.core.model.StoreItemModel
 import by.quty.launch.core.utilities.PopupMenuHelper
 import by.quty.launch.core.utilities.DialogBlurHelper
@@ -165,14 +167,34 @@ class StoreItemDetailFragment : Fragment() {
         if (!isAdded || view == null) return
 
         val activity = activity as? StoreActivity ?: return
-        val currentName = item?.name ?: itemName
-        val fresh = activity.findItemByName(currentName)
+        val fresh = activity.findItemByName(item?.name ?: itemName)
 
         if (fresh == null) {
             activity.hideItemDetail()
             return
         }
 
+        rebindIfChanged(fresh)
+    }
+
+    /**
+     * Каталог обновился с сервера, пока экран открыт.
+     *
+     * Без этого экран оставался на данных кэша: у оболочки с новой версией на
+     * сервере не появлялся пункт «Обновить» до перезапуска активности.
+     */
+    fun onCatalogUpdated() {
+        if (isProcessing) return
+        if (!isAdded || view == null) return
+
+        val activity = activity as? StoreActivity ?: return
+        val fresh = activity.findItemByName(item?.name ?: itemName) ?: return
+
+        rebindIfChanged(fresh)
+    }
+
+    /** Перерисовывает экран, только если модель действительно изменилась. */
+    private fun rebindIfChanged(fresh: StoreItemModel) {
         if (fresh != item) {
             item = fresh
             bindItem(fresh)
@@ -390,6 +412,13 @@ class StoreItemDetailFragment : Fragment() {
 
     /** Бейдж «Активна» + кнопка меню. */
     private fun updateActionUI(item: StoreItemModel) {
+        LoggerManager.info(
+            LoggerTagModel.STORE,
+            "STORE.menu  ${item.name}  installed=${item.installedVersion ?: "—"}  " +
+                    "remote=${item.remoteInfo?.version ?: "—"}  active=${item.isActive}  " +
+                    "canUpdate=${item.canUpdate}  canApply=${item.canApply}"
+        )
+
         if (isProcessing) {
             btnMenu.visibility = View.GONE
             return
